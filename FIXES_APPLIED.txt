@@ -1,0 +1,12 @@
+DEVA FIXES APPLIED
+
+- Admin session lifetime increased from 30 minutes to 8 hours.
+- Authorization header explicitly allowed by CORS for hosted/cross-origin admin usage.
+- Login/session-expired message improved.
+- Existing 2FA, Product Manager, image upload/preview, Admin and server routes verified.
+- Image uploads remain limited to JPG/PNG/WEBP, max 8 MB.
+
+Local login reset:
+1. RESET_DEVA_ADMIN.bat
+2. START_DEVA_LOCAL.bat
+3. Open http://localhost:3000/admin.html

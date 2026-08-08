@@ -1,0 +1,1 @@
+Fixed product image preview/upload: FileReader preview, blob CSP support, 8MB/type validation, clearer invalid-format handling.

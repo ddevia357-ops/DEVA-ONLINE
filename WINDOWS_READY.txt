@@ -1,0 +1,8 @@
+DEVA Windows Ready
+1) Install Node.js 22 LTS.
+2) Open this folder in Terminal.
+3) Run: npm.cmd install
+4) If needed: npm.cmd rebuild better-sqlite3
+5) Run: npm.cmd start
+6) Open: http://localhost:3000
+Keep the terminal window open while using the local server.
