@@ -1,0 +1,18 @@
+DEVA ONLINE - ONE-TIME ADMIN RESET
+
+ئەم وەشانە بۆ Reset کردنی Admin ـی Online لە Render ئامادە کراوە.
+
+1) ZIP ـەکە Push بکە بۆ GitHub / DEVA-ONLINE.
+2) لە Render > DEVA-ONLINE > Environment، ئەمانە هەبن:
+   ADMIN_EMAIL = ئیمەیڵی نوێی Admin
+   ADMIN_PASSWORD = پاسۆردی نوێی بەهێز (14+، پیتی گەورە/بچووک، ژمارە، نیشانە)
+   TRUST_PROXY = true
+   ALLOWED_ORIGINS = https://deva-online.onrender.com
+3) Variable ـێکی نوێ زیاد بکە:
+   RESET_ADMIN_ONCE_TOKEN = هەر دەقێکی درێژی نوێ، نموونە: reset-2026-08-09-CHANGE-ME-938472
+4) Save, rebuild, and deploy.
+5) کاتێک Live بوو، بە ADMIN_EMAIL و ADMIN_PASSWORD بچۆ ژوورەوە.
+6) هەمان RESET_ADMIN_ONCE_TOKEN دووبارە Reset ناکات؛ token ـەکە لە DB تۆمار دەکرێت.
+7) دوای سەرکەوتنی Login، RESET_ADMIN_ONCE_TOKEN دەتوانیت بسڕیتەوە و Deploy بکەیتەوە.
+
+تێبینی: Reset ـەکە قوفڵی Login پاک دەکات و 2FA ـی Admin کاتیی OFF دەکات؛ دوای Login دەتوانیت 2FA دوبارە ON بکەیت.
