@@ -16,7 +16,7 @@
 
 /* DEVA Product Manager */
 .product-manager-layout{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}.product-list-card{width:100%;overflow-x:auto}
-.product-manager-form{position:sticky;top:18px;background:var(--panel,#fff);border:1px solid var(--line,#e6e6e6);border-radius:20px;padding:18px}
+.product-manager-form{position:static;background:var(--panel,#fff);border:1px solid var(--line,#e6e6e6);border-radius:20px;padding:18px}
 .product-upload{display:grid;gap:10px;justify-items:center;padding:12px;border:1px dashed var(--line,#ccc);border-radius:16px}
 .product-preview{width:100%;height:220px;border-radius:14px;background:rgba(127,127,127,.08);display:grid;place-items:center;overflow:hidden;text-align:center}
 .product-preview img{width:100%;height:100%;object-fit:contain;background:#fff}.product-preview span{font-size:46px}.product-preview small{display:block}
@@ -27,3 +27,5 @@
 @media(max-width:900px){.product-manager-layout{grid-template-columns:1fr}.product-manager-form{position:static}.product-admin-row{grid-template-columns:60px 1fr}.product-admin-actions,.product-admin-price{grid-column:2}}
 
 .product-admin-actions .danger{font-weight:800;border:1px solid #b42318;background:#fff1f0;color:#b42318}.product-admin-actions .danger:hover{background:#b42318;color:#fff}
+
+.product-list-prominent{margin:18px 0;border:2px solid var(--accent);overflow:visible}.product-list-prominent #products{display:block!important;min-height:80px}.product-list-prominent .product-admin-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:10px 0}.product-admin-actions .danger{display:inline-block!important;visibility:visible!important;opacity:1!important}

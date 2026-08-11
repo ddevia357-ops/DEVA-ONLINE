@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#6b4a2d">
   <title>DEVA Professional Admin</title>
-  <link rel="stylesheet" href="admin.css?v=20260811-delete-final">
+  <link rel="stylesheet" href="admin.css?v=20260811-product-manager-v3">
 </head>
 <body>
   <section id="login" class="login-shell">
@@ -92,6 +92,10 @@
 
         <section id="productsTab" class="tab" hidden>
           <div class="section-head"><div><h2>📦 بەڕێوەبردنی بەرهەمەکان</h2><p>وێنە، ناو، بەش و نرخ زیاد بکە؛ بەرهەمەکە خۆکارانە لە ئەپ دەردەکەوێت.</p></div></div>
+          <div class="panel-card product-list-card product-list-prominent">
+            <div class="section-head"><div><h3>📋 بەرهەمە زیادکراوەکان <span id="productCountBadge"></span></h3><p>لە خوار هەر بەرهەمێک: ✏️ دەستکاری | چالاک/ناچالاک | 🗑 سڕینەوە</p></div><button type="button" id="refreshProductsBtn" class="secondary">↻ نوێکردنەوە</button></div>
+            <div id="products"><p class="muted">Loading products...</p></div>
+          </div>
           <div class="product-manager-layout">
             <form id="productForm" class="form-grid product-manager-form" enctype="multipart/form-data">
               <div class="product-upload full">
@@ -113,7 +117,6 @@
               <button type="button" class="full" id="productResetBtn" hidden>↩ گەڕانەوە بۆ بەرهەمی نوێ</button>
               <button type="button" class="danger full" id="productDeleteBtn" hidden>🗑 سڕینەوەی ئەم بەرهەمە</button>
             </form>
-            <div class="panel-card product-list-card"><div class="section-head"><div><h3>بەرهەمە زیادکراوەکان</h3><p>دەستکاری، چالاک/ناچالاککردن و سڕینەوە</p></div></div><div id="products"></div></div>
           </div>
         </section>
         <section id="ordersTab" class="tab" hidden><div class="section-head"><div><h2>داواکارییەکان</h2><p>پشکنین و گۆڕینی دۆخی داواکاری</p></div></div></div><div class="panel-card"><div id="orders"></div></div></section>
@@ -158,6 +161,6 @@
     </div>
   </section>
   <div id="sidebarOverlay" class="sidebar-overlay" hidden></div>
-  <script src="admin.js?v=20260811-delete-final"></script><script src="admin-rewards.js?v=20260811-delete-final"></script><script src="admin-sponsors.js?v=20260811-delete-final"></script>
+  <script src="admin.js?v=20260811-product-manager-v3"></script><script src="admin-rewards.js?v=20260811-product-manager-v3"></script><script src="admin-sponsors.js?v=20260811-product-manager-v3"></script>
 </body>
 </html>
