@@ -1,0 +1,12 @@
+DEVA ADMIN RESET FIX
+
+Fixed: server/src/server.js now supports RESET_ADMIN_ONCE_TOKEN at startup.
+- Works on Render Free without Shell access.
+- Resets/creates the ADMIN_EMAIL account using ADMIN_PASSWORD.
+- Restores SUPER_ADMIN role and active status.
+- Clears failed login attempts and temporary lock.
+- Disables 2FA during reset.
+- Invalidates old sessions by incrementing token_version.
+- Records a SHA-256 hash in admin_reset_events so the same token is only applied once on a persistent database.
+
+Security: remove RESET_ADMIN_ONCE_TOKEN from Render after a successful login.
