@@ -180,33 +180,60 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
 })();
 
 
-/* DEVA main hamburger menu — 4 languages */
+/* DEVA main hamburger menu — professional 4-language drawer */
 (function(){
  const menuText={
-  ku:{account:'ئەکاونتی شەخسی',language:'زمانەکان',address:'ناونیشان',contact:'پەیوەندی',ai:'AI ـی دێڤا',ar:'AR ـی دێڤا'},
-  ar:{account:'الحساب الشخصي',language:'اللغات',address:'العنوان',contact:'اتصل بنا',ai:'ذكاء DEVA الاصطناعي',ar:'الواقع المعزز AR'},
-  en:{account:'My Account',language:'Languages',address:'Address',contact:'Contact Us',ai:'DEVA AI',ar:'AR Room Preview'},
-  tr:{account:'Kişisel Hesap',language:'Diller',address:'Adres',contact:'İletişim',ai:'DEVA AI',ar:'AR Oda Önizleme'}
+  ku:{account:'ئەکاونتی شەخسی',accountSub:'هەژمار، دڵخوازەکان و داواکارییەکان',language:'زمانەکان',discover:'خزمەتگوزارییەکانی DEVA',social:'تۆڕە کۆمەڵایەتییەکان',info:'زانیاری و پەیوەندی',rewards:'دیارییەکانی دێڤا',rewardsSub:'خەڵات، QR و ڕاکێشان',address:'ناونیشان',addressSub:'پێشانگای DEVA لە هەولێر',contact:'پەیوەندی',contactSub:'ژمارە و ڕێگاکانی پەیوەندی',ai:'DEVA AI',aiSub:'یارمەتیدەری زیرەکی هەڵبژاردن',ar:'DEVA AR',arSub:'بینینی کەلوپەل لە ژوورەکەت',follow:'شوێنمان بکەوە'},
+  ar:{account:'الحساب الشخصي',accountSub:'الحساب والمفضلة والطلبات',language:'اللغات',discover:'خدمات DEVA',social:'وسائل التواصل الاجتماعي',info:'المعلومات والتواصل',rewards:'هدايا DEVA',rewardsSub:'الجوائز وQR والسحوبات',address:'العنوان',addressSub:'معرض DEVA في أربيل',contact:'اتصل بنا',contactSub:'الأرقام وطرق التواصل',ai:'DEVA AI',aiSub:'مساعد ذكي لاختيار الأثاث',ar:'DEVA AR',arSub:'شاهد الأثاث داخل غرفتك',follow:'تابعنا'},
+  en:{account:'My Account',accountSub:'Profile, favorites and orders',language:'Languages',discover:'DEVA Services',social:'Social Media',info:'Information & Contact',rewards:'DEVA Gifts',rewardsSub:'Rewards, QR and draws',address:'Address',addressSub:'DEVA showroom in Erbil',contact:'Contact Us',contactSub:'Phone numbers and contact options',ai:'DEVA AI',aiSub:'Smart furniture assistant',ar:'DEVA AR',arSub:'Preview furniture in your room',follow:'Follow DEVA'},
+  tr:{account:'Kişisel Hesap',accountSub:'Profil, favoriler ve siparişler',language:'Diller',discover:'DEVA Hizmetleri',social:'Sosyal Medya',info:'Bilgi ve İletişim',rewards:'DEVA Hediyeleri',rewardsSub:'Ödüller, QR ve çekilişler',address:'Adres',addressSub:'Erbil DEVA mağazası',contact:'İletişim',contactSub:'Telefon ve iletişim seçenekleri',ai:'DEVA AI',aiSub:'Akıllı mobilya asistanı',ar:'DEVA AR',arSub:'Mobilyayı odanızda görün',follow:'DEVA’yı Takip Et'}
  };
  const social={instagram:'https://www.instagram.com/deva.furniture.erbil',tiktok:'https://www.tiktok.com/@deva.furniture.er',facebook:'https://www.facebook.com/profile.php?id=61585916741196',whatsapp:'https://wa.me/9647509412626'};
  const body=document.getElementById('mainMenuBody'), panel=document.getElementById('mainMenu'), back=document.getElementById('mainMenuBackdrop'), btn=document.getElementById('mainMenuBtn'), close=document.getElementById('mainMenuClose');
  if(!body||!panel||!btn)return;
+ function item(action,icon,title,sub,extra=''){return `<button class="main-menu-card" data-action="${action}"><span class="main-menu-icon">${icon}</span><span class="main-menu-copy"><b>${title}</b><small>${sub||''}</small></span><i>›</i>${extra}</button>`}
  function renderMenu(){const x=menuText[lang]||menuText.ku;body.innerHTML=`
-  <button class="main-menu-item" data-action="account"><span>👤</span><b>${x.account}</b></button>
-  <div class="main-menu-language"><button class="main-menu-item" data-action="langs"><span>🌐</span><b>${x.language}</b><i>▾</i></button><div class="main-menu-lang-options" hidden>${['ku','ar','en','tr'].map(l=>`<button data-menu-lang="${l}" class="${l===lang?'active':''}">${l.toUpperCase()}</button>`).join('')}</div></div>
-  <a class="main-menu-item" href="${social.tiktok}" target="_blank" rel="noopener"><span>♪</span><b>TikTok</b></a>
-  <a class="main-menu-item" href="${social.facebook}" target="_blank" rel="noopener"><span>f</span><b>Facebook</b></a>
-  <a class="main-menu-item" href="${social.instagram}" target="_blank" rel="noopener"><span>◎</span><b>Instagram</b></a>
-  <a class="main-menu-item" href="${social.whatsapp}" target="_blank" rel="noopener"><span>◉</span><b>WhatsApp</b></a>
-  <a class="main-menu-item" href="https://www.google.com/maps/search/?api=1&query=DEVA+Furniture+Erbil" target="_blank" rel="noopener"><span>📍</span><b>${x.address}</b></a>
-  <button class="main-menu-item" data-action="ar"><span>AR</span><b>${x.ar}</b></button>
-  <button class="main-menu-item" data-action="ai"><span>AI</span><b>${x.ai}</b></button>
-  <a class="main-menu-item" href="#contact" data-action="contact"><span>☎</span><b>${x.contact}</b></a>`;
+  <section class="main-menu-profile">
+   <div class="main-menu-logo">D</div><div><strong>DEVA FURNITURE</strong><span>ERBİL • PREMIUM FURNITURE</span></div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.account}</div>
+   ${item('account','👤',x.account,x.accountSub)}
+  </section>
+  <section class="main-menu-section main-menu-language">
+   <div class="main-menu-section-title">${x.language}</div>
+   <button class="main-menu-card language-card" data-action="langs"><span class="main-menu-icon">文</span><span class="main-menu-copy"><b>${x.language}</b><small>${lang.toUpperCase()}</small></span><i class="menu-chevron">⌄</i></button>
+   <div class="main-menu-lang-options" hidden>${['ku','ar','en','tr'].map(l=>`<button data-menu-lang="${l}" class="${l===lang?'active':''}">${l.toUpperCase()}</button>`).join('')}</div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.discover}</div>
+   <div class="main-menu-feature-grid">
+    <button class="main-menu-feature" data-action="rewards"><span>🎁</span><b>${x.rewards}</b><small>${x.rewardsSub}</small></button>
+    <button class="main-menu-feature" data-action="ar"><span>AR</span><b>${x.ar}</b><small>${x.arSub}</small></button>
+    <button class="main-menu-feature" data-action="ai"><span>AI</span><b>${x.ai}</b><small>${x.aiSub}</small></button>
+   </div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.social}</div>
+   <div class="main-menu-social-grid">
+    <a href="${social.instagram}" target="_blank" rel="noopener"><span>◎</span><b>Instagram</b></a>
+    <a href="${social.tiktok}" target="_blank" rel="noopener"><span>♪</span><b>TikTok</b></a>
+    <a href="${social.facebook}" target="_blank" rel="noopener"><span>f</span><b>Facebook</b></a>
+    <a href="${social.whatsapp}" target="_blank" rel="noopener"><span>◉</span><b>WhatsApp</b></a>
+   </div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.info}</div>
+   <a class="main-menu-card" href="https://www.google.com/maps/search/?api=1&query=DEVA+Furniture+Erbil" target="_blank" rel="noopener"><span class="main-menu-icon">⌖</span><span class="main-menu-copy"><b>${x.address}</b><small>${x.addressSub}</small></span><i>›</i></a>
+   <a class="main-menu-card" href="#contact" data-action="contact"><span class="main-menu-icon">☎</span><span class="main-menu-copy"><b>${x.contact}</b><small>${x.contactSub}</small></span><i>›</i></a>
+  </section>
+  <div class="main-menu-footer"><span>DEVA FURNITURE ERBİL</span><small>0750 941 2626 • 0770 941 2626</small></div>`;
   body.querySelector('[data-action="account"]').onclick=()=>{hideMenu();document.getElementById('accountBtn')?.click()};
+  body.querySelector('[data-action="rewards"]').onclick=()=>{hideMenu();document.getElementById('devaRewards')?.scrollIntoView({behavior:'smooth'})};
   body.querySelector('[data-action="ar"]').onclick=()=>{hideMenu();document.getElementById('roomBtn')?.click()};
   body.querySelector('[data-action="ai"]').onclick=()=>{hideMenu();document.getElementById('aiBtn')?.click()};
-  body.querySelector('[data-action="contact"]').onclick=hideMenu;
-  const lb=body.querySelector('[data-action="langs"]'), opts=body.querySelector('.main-menu-lang-options');lb.onclick=()=>{opts.hidden=!opts.hidden};
+  const contact=body.querySelector('[data-action="contact"]');if(contact)contact.onclick=hideMenu;
+  const lb=body.querySelector('[data-action="langs"]'), opts=body.querySelector('.main-menu-lang-options');lb.onclick=()=>{opts.hidden=!opts.hidden;lb.classList.toggle('open',!opts.hidden)};
   body.querySelectorAll('[data-menu-lang]').forEach(b=>b.onclick=()=>{setLang(b.dataset.menuLang);renderMenu()});
  }
  function showMenu(){renderMenu();panel.classList.add('open');back?.classList.add('open');panel.setAttribute('aria-hidden','false');btn.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
