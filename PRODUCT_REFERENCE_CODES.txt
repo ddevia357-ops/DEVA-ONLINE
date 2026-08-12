@@ -1,0 +1,6 @@
+DEVA Product Reference Codes
+
+- Built-in catalog: 0001 through 0155.
+- New products created in Admin receive the next stable code automatically.
+- Product cards and product details show the code.
+- WhatsApp product requests and cart orders include both code and product name.

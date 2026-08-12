@@ -1,0 +1,1 @@
+Fixed RTL phone number ordering and localized DEVA Rewards static UI for KU/AR/EN/TR.

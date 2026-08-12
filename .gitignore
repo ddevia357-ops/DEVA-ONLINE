@@ -1,1 +1,7 @@
-node_modules/
+
+# Mobile/store credentials — NEVER COMMIT
+mobile-app/credentials/*.json
+mobile-app/credentials/*.plist
+mobile-app/credentials/*.p8
+mobile-app/google-services.json
+mobile-app/GoogleService-Info.plist

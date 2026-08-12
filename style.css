@@ -198,3 +198,10 @@ body.light-theme .universal-back{background:rgba(255,255,255,.94)!important;colo
     inset-inline-start:12px!important;
   }
 }
+
+/* Phone numbers: keep digits ordered inside RTL Kurdish/Arabic layouts */
+.phone-ltr{direction:ltr!important;unicode-bidi:isolate!important;text-align:left}.phone-ltr bdi{direction:ltr;unicode-bidi:isolate}
+
+/* DEVA product reference codes */
+.product-code-badge{position:absolute;left:10px;top:10px;z-index:3;background:#0b0b0bd9;color:var(--gold);border:1px solid #caa85e99;border-radius:5px;padding:5px 8px;font-size:12px;font-weight:800;letter-spacing:1.5px;font-variant-numeric:tabular-nums;direction:ltr}
+.product-code-detail{display:inline-block;margin:4px 0 8px;padding:6px 10px;border:1px solid #caa85e66;color:var(--gold);background:#0b0b0b;border-radius:4px;font-weight:800;letter-spacing:1.5px;font-variant-numeric:tabular-nums;direction:ltr}

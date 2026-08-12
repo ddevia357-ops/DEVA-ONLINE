@@ -29,3 +29,6 @@
 .product-admin-actions .danger{font-weight:800;border:1px solid #b42318;background:#fff1f0;color:#b42318}.product-admin-actions .danger:hover{background:#b42318;color:#fff}
 
 .product-list-prominent{margin:18px 0;border:2px solid var(--accent);overflow:visible}.product-list-prominent #products{display:block!important;min-height:80px}.product-list-prominent .product-admin-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:10px 0}.product-admin-actions .danger{display:inline-block!important;visibility:visible!important;opacity:1!important}
+
+/* Auto product code */
+.product-code-field{display:grid;gap:6px}.product-code-field input{font-weight:800;letter-spacing:.12em;text-align:center}.product-code-field small{letter-spacing:0;font-weight:400}
