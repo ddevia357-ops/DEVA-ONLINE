@@ -178,3 +178,39 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
     renderFilters();renderProducts();renderRecent();
   }catch{}
 })();
+
+
+/* DEVA main hamburger menu — 4 languages */
+(function(){
+ const menuText={
+  ku:{account:'ئەکاونتی شەخسی',language:'زمانەکان',address:'ناونیشان',contact:'پەیوەندی',ai:'AI ـی دێڤا',ar:'AR ـی دێڤا'},
+  ar:{account:'الحساب الشخصي',language:'اللغات',address:'العنوان',contact:'اتصل بنا',ai:'ذكاء DEVA الاصطناعي',ar:'الواقع المعزز AR'},
+  en:{account:'My Account',language:'Languages',address:'Address',contact:'Contact Us',ai:'DEVA AI',ar:'AR Room Preview'},
+  tr:{account:'Kişisel Hesap',language:'Diller',address:'Adres',contact:'İletişim',ai:'DEVA AI',ar:'AR Oda Önizleme'}
+ };
+ const social={instagram:'https://www.instagram.com/deva.furniture.erbil',tiktok:'https://www.tiktok.com/@deva.furniture.er',facebook:'https://www.facebook.com/profile.php?id=61585916741196',whatsapp:'https://wa.me/9647509412626'};
+ const body=document.getElementById('mainMenuBody'), panel=document.getElementById('mainMenu'), back=document.getElementById('mainMenuBackdrop'), btn=document.getElementById('mainMenuBtn'), close=document.getElementById('mainMenuClose');
+ if(!body||!panel||!btn)return;
+ function renderMenu(){const x=menuText[lang]||menuText.ku;body.innerHTML=`
+  <button class="main-menu-item" data-action="account"><span>👤</span><b>${x.account}</b></button>
+  <div class="main-menu-language"><button class="main-menu-item" data-action="langs"><span>🌐</span><b>${x.language}</b><i>▾</i></button><div class="main-menu-lang-options" hidden>${['ku','ar','en','tr'].map(l=>`<button data-menu-lang="${l}" class="${l===lang?'active':''}">${l.toUpperCase()}</button>`).join('')}</div></div>
+  <a class="main-menu-item" href="${social.tiktok}" target="_blank" rel="noopener"><span>♪</span><b>TikTok</b></a>
+  <a class="main-menu-item" href="${social.facebook}" target="_blank" rel="noopener"><span>f</span><b>Facebook</b></a>
+  <a class="main-menu-item" href="${social.instagram}" target="_blank" rel="noopener"><span>◎</span><b>Instagram</b></a>
+  <a class="main-menu-item" href="${social.whatsapp}" target="_blank" rel="noopener"><span>◉</span><b>WhatsApp</b></a>
+  <a class="main-menu-item" href="https://www.google.com/maps/search/?api=1&query=DEVA+Furniture+Erbil" target="_blank" rel="noopener"><span>📍</span><b>${x.address}</b></a>
+  <button class="main-menu-item" data-action="ar"><span>AR</span><b>${x.ar}</b></button>
+  <button class="main-menu-item" data-action="ai"><span>AI</span><b>${x.ai}</b></button>
+  <a class="main-menu-item" href="#contact" data-action="contact"><span>☎</span><b>${x.contact}</b></a>`;
+  body.querySelector('[data-action="account"]').onclick=()=>{hideMenu();document.getElementById('accountBtn')?.click()};
+  body.querySelector('[data-action="ar"]').onclick=()=>{hideMenu();document.getElementById('roomBtn')?.click()};
+  body.querySelector('[data-action="ai"]').onclick=()=>{hideMenu();document.getElementById('aiBtn')?.click()};
+  body.querySelector('[data-action="contact"]').onclick=hideMenu;
+  const lb=body.querySelector('[data-action="langs"]'), opts=body.querySelector('.main-menu-lang-options');lb.onclick=()=>{opts.hidden=!opts.hidden};
+  body.querySelectorAll('[data-menu-lang]').forEach(b=>b.onclick=()=>{setLang(b.dataset.menuLang);renderMenu()});
+ }
+ function showMenu(){renderMenu();panel.classList.add('open');back?.classList.add('open');panel.setAttribute('aria-hidden','false');btn.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
+ function hideMenu(){panel.classList.remove('open');back?.classList.remove('open');panel.setAttribute('aria-hidden','true');btn.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
+ btn.onclick=showMenu;close.onclick=hideMenu;if(back)back.onclick=hideMenu;document.addEventListener('keydown',e=>{if(e.key==='Escape')hideMenu()});
+ window.addEventListener('deva-language-change',renderMenu);renderMenu();
+})();
