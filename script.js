@@ -7,7 +7,18 @@ Object.keys(extra).forEach(l=>Object.assign(D.translations[l],extra[l]));
 function t(k){return D.translations[lang][k]||k}function label(c){return D.catLabels[c]?.[lang]||c}function product(id){return D.products.find(p=>p.id===id)}
 function parsePrice(v){return Number(String(v||'').replace(/[^0-9.]/g,''))||0}function discountPercent(p){const old=parsePrice(p.oldPrice),now=parsePrice(p.price);return old>now&&now>0?Math.round((old-now)/old*100):0}function priceMarkup(p,modal=false){const off=discountPercent(p);if(!off)return `<span class="current-price">${p.price||t('contact')}</span>`;return `<span class="old-price">${p.oldPrice}</span><span class="current-price">${p.price}</span><span class="discount-badge">-${off}%</span>`}function cartCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
 function updateCounts(){$('#cartCount').textContent=cartCount();$('#wishCount').textContent=wishlist.length;$('#compareCount').textContent=compare.length}
-function setLang(l){lang=l;localStorage.setItem('deva-lang',l);document.documentElement.lang=l;document.documentElement.dir=D.translations[l].dir;$$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));$$('[data-placeholder]').forEach(e=>e.placeholder=t(e.dataset.placeholder));$('#lang').value=l;$$('.lang-chip').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));if($('#langMenuBtn'))$('#langMenuBtn').firstChild.textContent=l.toUpperCase()+' ';renderCategories();renderFilters();renderProducts();renderRecent();updateCategoryNav();if(currentProduct)openModal(currentProduct.id,false)}
+function updateBackTranslations(){
+  const labels={ku:'گەڕانەوە',ar:'العودة',en:'Back',tr:'Geri'};
+  const v=labels[lang]||labels.en;
+  $$('.universal-back').forEach(btn=>{
+    const span=btn.querySelector('span');
+    if(span)span.textContent=v;
+    btn.setAttribute('aria-label',v);
+  });
+  const dismiss=$('#installDismiss');
+  if(dismiss){const span=dismiss.querySelector('span');if(span)span.textContent=v;dismiss.setAttribute('aria-label',v)}
+}
+function setLang(l){lang=l;localStorage.setItem('deva-lang',l);document.documentElement.lang=l;document.documentElement.dir=D.translations[l].dir;$$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));$$('[data-placeholder]').forEach(e=>e.placeholder=t(e.dataset.placeholder));$('#lang').value=l;$$('.lang-chip').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));if($('#langMenuBtn'))$('#langMenuBtn').firstChild.textContent=l.toUpperCase()+' ';renderCategories();renderFilters();renderProducts();renderRecent();updateCategoryNav();updateBackTranslations();if(currentProduct)openModal(currentProduct.id,false)}
 function updateCategoryNav(){const nav=$('#categoryNav');if(!nav)return;nav.hidden=cat==='all';const names={ku:'گەڕانەوە بۆ هەموو بەشەکان',ar:'العودة إلى جميع الأقسام',en:'Back to all collections',tr:'Tüm koleksiyonlara dön'};const txt=$('#categoryBackText');if(txt)txt.textContent=names[lang]||names.en}
 function selectCategory(nextCat,push=true){cat=nextCat||'all';renderFilters();renderProducts();updateCategoryNav();if(push){const hash=cat==='all'?'#products':`#category-${cat}`;history.pushState({cat},'',hash)}$('#products').scrollIntoView({behavior:'smooth',block:'start'})}
 function renderCategories(){const order=['sofa','bedroom','corner','tv','console','dining','coffee','door','clock','decor'];$('#categoryGrid').innerHTML=order.map(c=>`<article class="category-card" data-cat="${c}"><img loading="lazy" decoding="async" src="${D.covers[c]||''}"><div class="label"><small>DEVA COLLECTION</small><h3>${label(c)}</h3></div></article>`).join('');$$('.category-card').forEach(x=>x.onclick=()=>selectCategory(x.dataset.cat))}
