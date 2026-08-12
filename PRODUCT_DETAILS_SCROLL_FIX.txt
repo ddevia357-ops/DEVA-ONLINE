@@ -1,0 +1,5 @@
+DEVA Product Details Scroll Fix
+- Added a visible vertical scrollbar to product details.
+- Product details can be moved up/down with mouse wheel, scrollbar, or touch.
+- Back button stays visible while scrolling.
+- Works on desktop and mobile layouts.

@@ -151,4 +151,50 @@ body.light-theme .universal-back{background:rgba(255,255,255,.94)!important;colo
 .reward-float{display:none!important;}
 
 /* DEVA language flags */
-.lang-switcher{display:flex;align-items:center;gap:6px;direction:ltr}.lang-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}.actions .lang-chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 9px;min-width:52px;border-radius:999px;cursor:pointer;transition:.2s}.actions .lang-chip:hover,.actions .lang-chip.active{border-color:var(--gold);color:var(--gold);background:#211b10}.flag-emoji{font-size:18px;line-height:1}.flag-kurdistan{position:relative;width:24px;height:16px;overflow:hidden;border-radius:2px;box-shadow:0 0 0 1px #ffffff30;flex:none;background:linear-gradient(to bottom,#d51f2b 0 33.333%,#fff 33.333% 66.666%,#168544 66.666% 100%)}.flag-kurdistan:after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:#f2c500;transform:translate(-50%,-50%);box-shadow:0 0 0 1px #d6ab00}.flag-kurdistan i{display:none}@media(max-width:900px){.actions .lang-chip{min-width:auto;padding:7px}.actions .lang-chip>span:last-child{display:none}}@media(max-width:620px){.lang-switcher{gap:3px}.actions .lang-chip{display:inline-flex!important;padding:6px;min-width:36px}.flag-emoji{font-size:17px}.flag-kurdistan{width:22px;height:15px}}
+.lang-switcher{display:flex;align-items:center;gap:6px;direction:ltr}.lang-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}.actions .lang-chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 9px;min-width:52px;border-radius:999px;cursor:pointer;transition:.2s}.actions .lang-chip:hover,.actions .lang-chip.active{border-color:var(--gold);color:var(--gold);background:#211b10}@media(max-width:900px){.actions .lang-chip{min-width:auto;padding:7px}.actions .lang-chip>span:last-child{display:none}}@media(max-width:620px){.lang-switcher{gap:3px}.actions .lang-chip{display:inline-flex!important;padding:6px;min-width:36px}}
+
+/* Product details — always-visible vertical scroll control */
+#modal.open .product-modal{
+  max-height:92vh!important;
+  overflow-y:scroll!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-gutter:stable!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#d4af37 #2a2a2a!important;
+}
+#modal.open .product-modal::-webkit-scrollbar{width:14px!important}
+#modal.open .product-modal::-webkit-scrollbar-track{
+  background:#2a2a2a!important;
+  border-left:1px solid rgba(255,255,255,.08)!important;
+}
+#modal.open .product-modal::-webkit-scrollbar-thumb{
+  background:#d4af37!important;
+  border:3px solid #2a2a2a!important;
+  border-radius:999px!important;
+  min-height:48px!important;
+}
+#modal.open .product-modal::-webkit-scrollbar-thumb:hover{background:#f0cf79!important}
+
+/* Keep the back button visible while scrolling product details */
+#modal.open .product-modal>.universal-back{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 16px)!important;
+  inset-inline-start:16px!important;
+  inset-inline-end:auto!important;
+  z-index:100001!important;
+}
+
+@media(max-width:620px){
+  #modal.open .product-modal{
+    max-height:100dvh!important;
+    min-height:100dvh!important;
+    scrollbar-width:auto!important;
+  }
+  #modal.open .product-modal::-webkit-scrollbar{width:10px!important}
+  #modal.open .product-modal>.universal-back{
+    top:calc(env(safe-area-inset-top) + 12px)!important;
+    inset-inline-start:12px!important;
+  }
+}
