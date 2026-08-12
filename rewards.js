@@ -50,6 +50,7 @@ tr:{nav:'DEVA Hediyeleri',launchTitle:'DEVA Hediyeleri',launchText:'Mağazadaki 
 const q=s=>document.querySelector(s), put=(s,v)=>{const e=q(s);if(e)e.textContent=v};
 function apply(l){const x=R[l]||R.en;put('#rewardNavText',x.nav);put('#rewardLaunchTitle',x.launchTitle);put('#rewardLaunchText',x.launchText);put('#rewardLaunchBtn',x.view);put('#rewardMainTitle',x.mainTitle);put('#rewardMainText',x.mainText);put('#rewardDrawTimeLabel',x.drawLabel);put('#rewardDrawTimeText',x.drawText);put('#rewardPrizesTitle',x.prizes);put('#rewardScanBtn span',x.scan);put('#rewardJoinBtn',x.join);put('#rewardNotifyBtn span',x.notify);put('#rewardCreditNote',x.credit);put('#rewardWinnersTitle',x.winners);put('#rewardFloatText',x.float);put('#rewardActivateTitle',x.activateTitle);put('#rewardActivateHelp',x.activateHelp);const n=q('#rewardName'),p=q('#rewardPhone');if(n)n.placeholder=x.name;if(p)p.placeholder=x.phone;put('#rewardConsentText',x.consent);put('#rewardActivateBtn',x.activate);put('#rewardCongrats',x.congrats);put('#rewardGiftHelp',x.giftHelp)}
 window.addEventListener('deva-language-change',e=>apply(e.detail?.lang||localStorage.getItem('deva-lang')||'ku'));
+window.addEventListener('deva-rewards-language-sync',e=>apply(e.detail?.lang||localStorage.getItem('deva-lang')||'ku'));
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>apply(localStorage.getItem('deva-lang')||'ku'));else apply(localStorage.getItem('deva-lang')||'ku');
 })();
 
@@ -184,4 +185,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyAll);else applyAll();
   // Keep translations correct after reward data refreshes the DOM.
   const root=q('#devaRewards'); if(root){new MutationObserver(()=>{clearTimeout(window.__devaRewardLangTimer);window.__devaRewardLangTimer=setTimeout(applyAll,40)}).observe(root,{childList:true,subtree:true});}
+})();
+
+// DEVA Rewards V12 — hard-sync rewards language with the main site language.
+(()=>{
+  let last='';
+  function current(){return localStorage.getItem('deva-lang')||document.documentElement.lang||'ku'}
+  function sync(force=false){
+    const l=current();
+    if(!force && l===last)return;
+    last=l;
+    try{ window.DEVA_REWARDS_FULL_I18N?.applyAll?.(); }catch(e){}
+    try{
+      // Trigger every other Rewards translation layer too.
+      window.dispatchEvent(new CustomEvent('deva-rewards-language-sync',{detail:{lang:l}}));
+    }catch(e){}
+  }
+  // Directly watch every language control, including the hamburger menu.
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-lang],[data-menu-lang],.lang-chip'))setTimeout(()=>sync(true),0);
+  },true);
+  window.addEventListener('deva-language-change',()=>setTimeout(()=>sync(true),0));
+  window.addEventListener('storage',e=>{if(e.key==='deva-lang')sync(true)});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>sync(true));else sync(true);
+  // Safety net for any UI path that changes language without emitting an event.
+  setInterval(sync,250);
 })();
