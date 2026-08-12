@@ -11,3 +11,12 @@
 @media(max-width:800px){.reward-launch-inner{display:block;padding:20px}.reward-launch-btn{display:block;text-align:center;margin-top:18px}.reward-launch-card{padding:14px}.reward-float{right:12px;bottom:84px}.reward-float span{display:none}}
 /* V9 Live Draw Room */
 .reward-live-room{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding:12px;border:1px solid rgba(212,175,55,.3);border-radius:14px;background:#19140e;text-align:start}.reward-live-room small{display:block;color:#bdb3a5}.reward-live-room b{color:#fff}.reward-live-pill{white-space:nowrap;border-radius:999px;padding:8px 11px;background:#261c13;color:#fff;font-size:12px;font-weight:900}.reward-live-pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e53935;margin-inline-end:5px;box-shadow:0 0 0 5px rgba(229,57,53,.12)}.reward-live-pill strong{color:#d4af37}.reward-draw-state{margin-top:7px;font-size:12px;color:#d7d0c7}.reward-countdown{font-variant-numeric:tabular-nums}@media(max-width:600px){.reward-live-room{align-items:flex-start;flex-direction:column}}
+
+/* DEVA Rewards V11 — localized how-to box */
+.reward-howto{margin-top:18px;padding:16px 18px;border:1px solid rgba(196,160,75,.34);border-radius:16px;background:rgba(196,160,75,.07)}
+.reward-howto h3{margin:0 0 10px;color:#d8b86a;font-size:1rem}
+.reward-howto ol{margin:0;padding-inline-start:22px;display:grid;gap:7px}
+.reward-howto li{line-height:1.65}
+.reward-showroom-only{margin:12px 0 0;padding-top:10px;border-top:1px solid rgba(196,160,75,.22);font-weight:700}
+html[dir="rtl"] .reward-howto{text-align:right}
+html[dir="ltr"] .reward-howto{text-align:left}

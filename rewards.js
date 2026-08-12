@@ -100,3 +100,88 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.addEventListener('deva-language-change',()=>setTimeout(repaintStaticRuntime,0));
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',repaintStaticRuntime);else repaintStaticRuntime();
 })();
+
+
+// DEVA Rewards V11 — robust complete 4-language showroom instructions and UI
+(()=>{
+  const TEXT={
+    ku:{
+      title:'خەڵاتی هەفتانەی DEVA',
+      intro:'بۆ بەژداربوون لە دیارییەکانی DEVA، پێویستە سەردانی پێشانگای DEVA بکەیت و تەنها یەک جار QR ـی تایبەت بە پێشانگا سکان بکەیت. دوای سکانکردن، ئەندامێتی تۆ چالاک دەبێت و بەردەوام لە ڕاکێشانە هەفتانەکان بەژدار دەبیت. دوای گەیشتن بە 1,000 ئەندام، ڕاکێشان هەموو هەینی کاتژمێر 9ی شەو ئەنجام دەدرێت.',
+      howTitle:'چۆن بەژدار بم؟',
+      step1:'١. سەردانی پێشانگای DEVA لە هەولێر بکە.',
+      step2:'٢. لە ناو پێشانگا QR ـی DEVA Rewards سکان بکە.',
+      step3:'٣. زانیارییەکانت تۆمار بکە تا ئەندامێتی تۆ چالاک بێت.',
+      step4:'٤. دوای چالاکبوون، خۆکارانە لە ڕاکێشانە هەفتانەکان بەژدار دەبیت.',
+      showroom:'📍 سکانکردنی QR تەنها لە پێشانگای DEVA ئەنجام دەدرێت.',
+      members:'ئەندامانی چالاک', waiting:'کەس چاوەڕێن', drawWait:'⏳ چاوەڕێی ڕاکێشانی داهاتوو', drawLive:'🔴 ڕاکێشان دەستی پێکرد',
+      superEvery:'Super Prize • هەر ٣ مانگ', notifTitle:'DEVA Friday Gift', notifBody:x=>`پیرۆزە! ${x} ـت بردووەتەوە.`,
+      email:'ئیمەیڵ (ئارەزوومەندانە)', live:'LIVE'
+    },
+    ar:{
+      title:'جوائز DEVA الأسبوعية',
+      intro:'للمشاركة في هدايا DEVA، يجب زيارة معرض DEVA ومسح رمز QR الخاص بالمعرض مرة واحدة فقط. بعد المسح يتم تفعيل عضويتك وتبقى مشاركاً تلقائياً في السحوبات الأسبوعية. بعد الوصول إلى 1,000 عضو، يُجرى السحب كل يوم جمعة الساعة 9:00 مساءً.',
+      howTitle:'كيف أشارك؟',
+      step1:'١. قم بزيارة معرض DEVA في أربيل.',
+      step2:'٢. امسح رمز QR الخاص بـ DEVA Rewards داخل المعرض.',
+      step3:'٣. سجّل معلوماتك لتفعيل عضويتك.',
+      step4:'٤. بعد التفعيل ستشارك تلقائياً في السحوبات الأسبوعية.',
+      showroom:'📍 مسح رمز QR يتم داخل معرض DEVA فقط.',
+      members:'الأعضاء النشطون', waiting:'شخص بانتظار السحب', drawWait:'⏳ بانتظار السحب القادم', drawLive:'🔴 بدأ السحب الآن',
+      superEvery:'الجائزة الكبرى • كل 3 أشهر', notifTitle:'هدية DEVA الأسبوعية', notifBody:x=>`مبروك! لقد ربحت ${x}.`,
+      email:'البريد الإلكتروني (اختياري)', live:'مباشر'
+    },
+    en:{
+      title:'DEVA Weekly Rewards',
+      intro:'To join DEVA Gifts, visit the DEVA showroom and scan the showroom QR code once. After scanning, your membership is activated and you remain automatically entered in the weekly draws. Once DEVA reaches 1,000 members, the draw is held every Friday at 9:00 PM.',
+      howTitle:'How to join',
+      step1:'1. Visit the DEVA showroom in Erbil.',
+      step2:'2. Scan the DEVA Rewards QR code inside the showroom.',
+      step3:'3. Register your details to activate your membership.',
+      step4:'4. Once activated, you are automatically entered in the weekly draws.',
+      showroom:'📍 The QR code must be scanned inside the DEVA showroom.',
+      members:'Active members', waiting:'people waiting', drawWait:'⏳ Waiting for the next draw', drawLive:'🔴 Draw is now live',
+      superEvery:'Super Prize • every 3 months', notifTitle:'DEVA Friday Gift', notifBody:x=>`Congratulations! You won ${x}.`,
+      email:'Email (optional)', live:'LIVE'
+    },
+    tr:{
+      title:'DEVA Haftalık Ödülleri',
+      intro:'DEVA Hediyelerine katılmak için DEVA mağazasını ziyaret edin ve mağazaya özel QR kodunu yalnızca bir kez tarayın. Tarama sonrasında üyeliğiniz etkinleşir ve haftalık çekilişlere otomatik olarak katılmaya devam edersiniz. DEVA 1.000 üyeye ulaştıktan sonra çekiliş her Cuma saat 21:00’de yapılır.',
+      howTitle:'Nasıl katılırım?',
+      step1:'1. Erbil’deki DEVA mağazasını ziyaret edin.',
+      step2:'2. Mağaza içinde DEVA Rewards QR kodunu tarayın.',
+      step3:'3. Üyeliğinizi etkinleştirmek için bilgilerinizi kaydedin.',
+      step4:'4. Etkinleştirmeden sonra haftalık çekilişlere otomatik olarak katılırsınız.',
+      showroom:'📍 QR kodu yalnızca DEVA mağazasının içinde taranmalıdır.',
+      members:'Aktif üyeler', waiting:'kişi bekliyor', drawWait:'⏳ Sonraki çekiliş bekleniyor', drawLive:'🔴 Çekiliş başladı',
+      superEvery:'Büyük Ödül • her 3 ayda bir', notifTitle:'DEVA Cuma Hediyesi', notifBody:x=>`Tebrikler! ${x} kazandınız.`,
+      email:'E-posta (isteğe bağlı)', live:'CANLI'
+    }
+  };
+  const q=s=>document.querySelector(s);
+  const lang=()=>localStorage.getItem('deva-lang')||document.documentElement.lang||'ku';
+  const get=()=>TEXT[lang()]||TEXT.ku;
+  function ensureHow(){
+    const main=q('#rewardMainText'); if(!main||q('#rewardHowTo'))return;
+    const box=document.createElement('div'); box.id='rewardHowTo'; box.className='reward-howto';
+    box.innerHTML='<h3 id="rewardHowTitle"></h3><ol><li id="rewardHow1"></li><li id="rewardHow2"></li><li id="rewardHow3"></li><li id="rewardHow4"></li></ol><p id="rewardShowroomOnly" class="reward-showroom-only"></p>';
+    main.insertAdjacentElement('afterend',box);
+  }
+  function put(s,v){const e=q(s);if(e)e.textContent=v}
+  function applyAll(){
+    const x=get(); ensureHow();
+    put('#rewardMainTitle',x.title); put('#rewardMainText',x.intro);
+    put('#rewardHowTitle',x.howTitle); put('#rewardHow1',x.step1); put('#rewardHow2',x.step2); put('#rewardHow3',x.step3); put('#rewardHow4',x.step4); put('#rewardShowroomOnly',x.showroom);
+    const memberLabel=q('.rewards-count > small'); if(memberLabel)memberLabel.textContent=x.members;
+    const live=q('.reward-live-pill'); if(live){const strong=live.querySelector('strong')?.outerHTML||'<strong id="rewardWaitingNow">0</strong>';live.innerHTML=`<i></i> ${x.live} ${strong} ${x.waiting}`;}
+    const state=q('#rewardDrawState'); if(state){state.textContent=state.textContent.includes('🔴')?x.drawLive:x.drawWait;}
+    const email=q('#rewardEmail');if(email)email.placeholder=x.email;
+    document.querySelectorAll('.reward-prize.grand small').forEach(e=>e.textContent=x.superEvery);
+  }
+  window.DEVA_REWARDS_FULL_I18N={TEXT,applyAll};
+  window.addEventListener('deva-language-change',()=>setTimeout(applyAll,0));
+  window.addEventListener('storage',e=>{if(e.key==='deva-lang')applyAll()});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applyAll);else applyAll();
+  // Keep translations correct after reward data refreshes the DOM.
+  const root=q('#devaRewards'); if(root){new MutationObserver(()=>{clearTimeout(window.__devaRewardLangTimer);window.__devaRewardLangTimer=setTimeout(applyAll,40)}).observe(root,{childList:true,subtree:true});}
+})();
