@@ -14,6 +14,27 @@ function bindRows(){
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');load()}catch(e){note(e.message,false)}});
   $$('[data-order]').forEach(s=>s.onchange=async()=>{try{await api('/api/admin/orders/'+encodeURIComponent(s.dataset.order),{method:'PATCH',body:JSON.stringify({status:s.value})});note('دۆخی داواکاری گۆڕدرا')}catch(e){note(e.message,false)}})
 }
+let editingProductId=null;
+function slugProduct(value){
+  return String(value||'product').trim().toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06ff]+/g,'-')
+    .replace(/^-+|-+$/g,'') || 'product';
+}
+function resetProductForm(){
+  editingProductId=null;
+  const form=$('#productForm');
+  if(form) form.reset();
+  if($('#pid')){$('#pid').disabled=false;$('#pid').value='';}
+  if($('#pstock')) $('#pstock').value='0';
+  if($('#plowstock')) $('#plowstock').value='2';
+  if($('#pactive')) $('#pactive').checked=true;
+  if($('#pimage')) $('#pimage').value='';
+  if($('#pfile')) $('#pfile').value='';
+  if($('#productPreview')) $('#productPreview').innerHTML='<span>🖼️</span><small>وێنەی بەرهەم</small>';
+  if($('#productSaveBtn')) $('#productSaveBtn').textContent='＋ زیادکردنی بەرهەم';
+  if($('#productResetBtn')) $('#productResetBtn').hidden=true;
+  if($('#productDeleteBtn')) $('#productDeleteBtn').hidden=true;
+}
 function editProduct(id){const x=(window.__adminProducts||[]).find(p=>p.id===id);if(!x)return;editingProductId=id;$('#pid').value=x.id;$('#pid').disabled=true;$('#pname').value=x.name||'';$('#pcat').value=x.category||'';$('#pprice').value=x.price_usd||0;$('#pstock').value=Number(x.stock_qty||0);$('#plowstock').value=Number(x.low_stock_threshold??2);$('#pimage').value=x.image||'';$('#pactive').checked=!!x.active;$('#productSaveBtn').textContent='✓ هەڵگرتنی گۆڕانکاری';$('#productResetBtn').hidden=false;$('#productDeleteBtn').hidden=false;if(x.image)$('#productPreview').innerHTML=`<img src="${esc(x.image)}" alt="preview">`;$('#productForm').scrollIntoView({behavior:'smooth',block:'start'})}
 $('#productResetBtn').onclick=resetProductForm;
 $('#productDeleteBtn').onclick=async()=>{if(!editingProductId)return;if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(editingProductId),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');resetProductForm();load()}catch(e){note(e.message,false)}};
