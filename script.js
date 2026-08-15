@@ -172,9 +172,14 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
 // Dynamic products created from Admin Dashboard.
 (async function loadDashboardProducts(){
   try{
-    const r=await fetch('/api/products',{cache:'no-store'});if(!r.ok)return;const rows=await r.json();if(!Array.isArray(rows)||!rows.length)return;
-    const dyn=rows.map(x=>({id:x.id,name:x.name,category:x.category,image:x.image||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',images:x.image?[x.image]:[],code:x.product_code||''}));
-    const byId=new Map(D.products.map(x=>[x.id,x]));dyn.forEach(x=>byId.set(x.id,{...(byId.get(x.id)||{}),...x}));D.products=[...byId.values()];
+    const r=await fetch('/api/products',{cache:'no-store'});if(!r.ok)return;const rows=await r.json();if(!Array.isArray(rows))return;
+    // Once the API is reachable, SQLite is the single source of truth.
+    // data.js is only an offline fallback, so a product deleted in DEVA Admin cannot reappear.
+    D.products=rows.map(x=>{
+      let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
+      if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
+      return {id:x.id,name:x.name,category:x.category,image:x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:gallery,code:x.product_code||''};
+    });
     renderFilters();renderProducts();renderRecent();
   }catch{}
 })();
