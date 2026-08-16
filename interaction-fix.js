@@ -63,6 +63,29 @@
     document.body.classList.remove('menu-open');
   }
 
+  function openContactPanel(){
+    closeMainMenu();
+    const modal=q('#contactModal');
+    if(modal){
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
+      document.body.classList.add('modal-open');
+      return true;
+    }
+    const footer=q('#contact');
+    if(footer){
+      requestAnimationFrame(()=>footer.scrollIntoView({behavior:'smooth',block:'start'}));
+      return true;
+    }
+    return false;
+  }
+
+  function closeContactPanel(){
+    const modal=q('#contactModal');
+    if(modal){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+    document.body.classList.remove('modal-open');
+  }
+
   // Capture phase makes these interactions work even if another handler stops bubbling.
   document.addEventListener('click', (e) => {
     const category = e.target.closest('.category-card');
@@ -92,12 +115,20 @@
     const contact = e.target.closest('[data-action="contact"],a[href="#contact"]');
     if(contact){
       e.preventDefault();
-      closeMainMenu();
-      const footer = q('#contact');
-      if(footer){
-        history.replaceState(null, '', '#contact');
-        requestAnimationFrame(() => footer.scrollIntoView({behavior:'smooth', block:'start'}));
-      }
+      e.stopPropagation();
+      openContactPanel();
+      return;
+    }
+
+    if(e.target.closest('#contactModalClose')){
+      e.preventDefault();
+      closeContactPanel();
+      return;
+    }
+
+    const contactModal=q('#contactModal');
+    if(contactModal && e.target===contactModal){
+      closeContactPanel();
       return;
     }
 

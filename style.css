@@ -212,6 +212,8 @@ body.light-theme .universal-back{background:rgba(255,255,255,.94)!important;colo
 
 /* Menu-only controls: language, AR, AI and DEVA Gifts */
 header .actions > #aiBtn, header .actions > #roomBtn, header .actions > .lang-switcher, header nav .reward-nav-link, .reward-launch-card, .reward-float{display:none!important;}
+/* Keep secondary services inside the hamburger menu only. */
+header .actions > #trackBtn, header .actions > #compareBtn, header .actions > #loyaltyBtn{display:none!important;}
 
 
 /* DEVA Professional Hamburger Menu V2 */
@@ -293,3 +295,13 @@ body.light-theme .chat-panel{background:linear-gradient(180deg,#fff,#f7f3eb);bor
   .chat-widget{right:14px!important;bottom:calc(env(safe-area-inset-bottom) + 112px)!important}
   .chat-panel{bottom:calc(env(safe-area-inset-bottom) + 178px)!important}
 }
+
+/* 2026-08-16 reliable mobile contact panel */
+.contact-mobile-modal{z-index:12050!important;padding:14px!important;align-items:flex-end!important}
+.contact-mobile-modal.open{display:flex!important}
+.contact-mobile-box{width:min(560px,100%)!important;max-width:560px!important;max-height:88dvh!important;overflow-y:auto!important;border-radius:24px 24px 12px 12px!important;padding:18px!important;background:linear-gradient(180deg,#15130f,#0c0c0b)!important;border:1px solid rgba(215,175,84,.35)!important;box-shadow:0 -25px 70px rgba(0,0,0,.55)!important}
+.contact-modal-back{position:sticky!important;top:0!important;z-index:2!important;margin-bottom:12px!important}
+.contact-mobile-content{text-align:center!important}.contact-mobile-content h2{margin:4px 0!important}.contact-mobile-sub{color:#aaa!important;margin:4px 0 18px!important}
+.contact-mobile-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}.contact-action{display:flex!important;min-height:82px!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;padding:12px!important;border:1px solid #373126!important;border-radius:16px!important;background:#12110f!important;color:#f3eee4!important;text-decoration:none!important}.contact-action b{font-size:14px!important}.contact-action small{margin-top:5px!important;color:#a49d90!important}.contact-whatsapp{border-color:#6a572d!important;background:#17140e!important}
+.contact-mobile-social{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:8px!important;margin-top:12px!important}.contact-mobile-social a{padding:11px 6px!important;border:1px solid #2f2b24!important;border-radius:12px!important;color:#d8b45f!important;text-decoration:none!important;font-size:12px!important}
+@media(max-width:520px){.contact-mobile-modal{padding:0!important}.contact-mobile-box{border-radius:22px 22px 0 0!important;max-height:92dvh!important}.contact-mobile-actions{grid-template-columns:1fr!important}.contact-action{min-height:70px!important}.contact-mobile-social{grid-template-columns:1fr 1fr 1fr!important}}

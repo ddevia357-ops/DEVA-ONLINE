@@ -188,10 +188,10 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
 /* DEVA main hamburger menu — professional 4-language drawer */
 (function(){
  const menuText={
-  ku:{account:'ئەکاونتی شەخسی',accountSub:'هەژمار، دڵخوازەکان و داواکارییەکان',language:'زمانەکان',discover:'خزمەتگوزارییەکانی DEVA',social:'تۆڕە کۆمەڵایەتییەکان',info:'زانیاری و پەیوەندی',rewards:'دیارییەکانی دێڤا',rewardsSub:'خەڵات، QR و ڕاکێشان',address:'ناونیشان',addressSub:'پێشانگای DEVA لە هەولێر',contact:'پەیوەندی',contactSub:'ژمارە و ڕێگاکانی پەیوەندی',ai:'DEVA AI',aiSub:'یارمەتیدەری زیرەکی هەڵبژاردن',ar:'DEVA AR',arSub:'بینینی کەلوپەل لە ژوورەکەت',follow:'شوێنمان بکەوە'},
-  ar:{account:'الحساب الشخصي',accountSub:'الحساب والمفضلة والطلبات',language:'اللغات',discover:'خدمات DEVA',social:'وسائل التواصل الاجتماعي',info:'المعلومات والتواصل',rewards:'هدايا DEVA',rewardsSub:'الجوائز وQR والسحوبات',address:'العنوان',addressSub:'معرض DEVA في أربيل',contact:'اتصل بنا',contactSub:'الأرقام وطرق التواصل',ai:'DEVA AI',aiSub:'مساعد ذكي لاختيار الأثاث',ar:'DEVA AR',arSub:'شاهد الأثاث داخل غرفتك',follow:'تابعنا'},
-  en:{account:'My Account',accountSub:'Profile, favorites and orders',language:'Languages',discover:'DEVA Services',social:'Social Media',info:'Information & Contact',rewards:'DEVA Gifts',rewardsSub:'Rewards, QR and draws',address:'Address',addressSub:'DEVA showroom in Erbil',contact:'Contact Us',contactSub:'Phone numbers and contact options',ai:'DEVA AI',aiSub:'Smart furniture assistant',ar:'DEVA AR',arSub:'Preview furniture in your room',follow:'Follow DEVA'},
-  tr:{account:'Kişisel Hesap',accountSub:'Profil, favoriler ve siparişler',language:'Diller',discover:'DEVA Hizmetleri',social:'Sosyal Medya',info:'Bilgi ve İletişim',rewards:'DEVA Hediyeleri',rewardsSub:'Ödüller, QR ve çekilişler',address:'Adres',addressSub:'Erbil DEVA mağazası',contact:'İletişim',contactSub:'Telefon ve iletişim seçenekleri',ai:'DEVA AI',aiSub:'Akıllı mobilya asistanı',ar:'DEVA AR',arSub:'Mobilyayı odanızda görün',follow:'DEVA’yı Takip Et'}
+  ku:{account:'ئەکاونتی شەخسی',accountSub:'هەژمار، دڵخوازەکان و داواکارییەکان',language:'زمانەکان',discover:'خزمەتگوزارییەکانی DEVA',social:'تۆڕە کۆمەڵایەتییەکان',info:'زانیاری و پەیوەندی',rewards:'دیارییەکانی دێڤا',rewardsSub:'خەڵات، QR و ڕاکێشان',address:'ناونیشان',addressSub:'پێشانگای DEVA لە هەولێر',contact:'پەیوەندی',contactSub:'ژمارە و ڕێگاکانی پەیوەندی',ai:'DEVA AI',aiSub:'یارمەتیدەری زیرەکی هەڵبژاردن',ar:'DEVA AR',arSub:'بینینی کەلوپەل لە ژوورەکەت',follow:'شوێنمان بکەوە',track:'شوێنکەوتنی داواکاری',trackSub:'دۆخی داواکارییەکەت ببینە',compare:'بەراوردکردن',compareSub:'بەرهەمەکان بەراورد بکە',vip:'DEVA VIP CLUB',vipSub:'خاڵ، ئۆفەر و خەڵاتی ئەندامان'},
+  ar:{account:'الحساب الشخصي',accountSub:'الحساب والمفضلة والطلبات',language:'اللغات',discover:'خدمات DEVA',social:'وسائل التواصل الاجتماعي',info:'المعلومات والتواصل',rewards:'هدايا DEVA',rewardsSub:'الجوائز وQR والسحوبات',address:'العنوان',addressSub:'معرض DEVA في أربيل',contact:'اتصل بنا',contactSub:'الأرقام وطرق التواصل',ai:'DEVA AI',aiSub:'مساعد ذكي لاختيار الأثاث',ar:'DEVA AR',arSub:'شاهد الأثاث داخل غرفتك',follow:'تابعنا',track:'تتبع الطلب',trackSub:'تحقق من حالة طلبك',compare:'المقارنة',compareSub:'قارن بين المنتجات',vip:'DEVA VIP CLUB',vipSub:'نقاط وعروض ومكافآت الأعضاء'},
+  en:{account:'My Account',accountSub:'Profile, favorites and orders',language:'Languages',discover:'DEVA Services',social:'Social Media',info:'Information & Contact',rewards:'DEVA Gifts',rewardsSub:'Rewards, QR and draws',address:'Address',addressSub:'DEVA showroom in Erbil',contact:'Contact Us',contactSub:'Phone numbers and contact options',ai:'DEVA AI',aiSub:'Smart furniture assistant',ar:'DEVA AR',arSub:'Preview furniture in your room',follow:'Follow DEVA',track:'Order Tracking',trackSub:'Check your order status',compare:'Compare',compareSub:'Compare selected products',vip:'DEVA VIP CLUB',vipSub:'Points, offers and member rewards'},
+  tr:{account:'Kişisel Hesap',accountSub:'Profil, favoriler ve siparişler',language:'Diller',discover:'DEVA Hizmetleri',social:'Sosyal Medya',info:'Bilgi ve İletişim',rewards:'DEVA Hediyeleri',rewardsSub:'Ödüller, QR ve çekilişler',address:'Adres',addressSub:'Erbil DEVA mağazası',contact:'İletişim',contactSub:'Telefon ve iletişim seçenekleri',ai:'DEVA AI',aiSub:'Akıllı mobilya asistanı',ar:'DEVA AR',arSub:'Mobilyayı odanızda görün',follow:'DEVA’yı Takip Et',track:'Sipariş Takibi',trackSub:'Sipariş durumunu kontrol et',compare:'Karşılaştır',compareSub:'Ürünleri karşılaştır',vip:'DEVA VIP CLUB',vipSub:'Puanlar, teklifler ve üye ödülleri'}
  };
  const social={instagram:'https://www.instagram.com/deva.furniture.erbil',tiktok:'https://www.tiktok.com/@deva.furniture.er',facebook:'https://www.facebook.com/profile.php?id=61585916741196',whatsapp:'https://wa.me/9647509412626'};
  const body=document.getElementById('mainMenuBody'), panel=document.getElementById('mainMenu'), back=document.getElementById('mainMenuBackdrop'), btn=document.getElementById('mainMenuBtn'), close=document.getElementById('mainMenuClose');
@@ -217,6 +217,9 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
     <button class="main-menu-feature" data-action="ar"><span>AR</span><b>${x.ar}</b><small>${x.arSub}</small></button>
     <button class="main-menu-feature" data-action="ai"><span>AI</span><b>${x.ai}</b><small>${x.aiSub}</small></button>
    </div>
+   ${item('tracking','📦',x.track,x.trackSub)}
+   ${item('compare','⚖',x.compare,x.compareSub)}
+   ${item('vip','♛',x.vip,x.vipSub)}
   </section>
   <section class="main-menu-section">
    <div class="main-menu-section-title">${x.social}</div>
@@ -237,6 +240,9 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
   body.querySelector('[data-action="rewards"]').onclick=()=>{hideMenu();document.getElementById('devaRewards')?.scrollIntoView({behavior:'smooth'})};
   body.querySelector('[data-action="ar"]').onclick=()=>{hideMenu();document.getElementById('roomBtn')?.click()};
   body.querySelector('[data-action="ai"]').onclick=()=>{hideMenu();document.getElementById('aiBtn')?.click()};
+  body.querySelector('[data-action="tracking"]').onclick=()=>{hideMenu();document.getElementById('trackBtn')?.click()};
+  body.querySelector('[data-action="compare"]').onclick=()=>{hideMenu();document.getElementById('compareBtn')?.click()};
+  body.querySelector('[data-action="vip"]').onclick=()=>{hideMenu();document.getElementById('loyaltyBtn')?.click()};
   const contact=body.querySelector('[data-action="contact"]');if(contact)contact.onclick=hideMenu;
   const lb=body.querySelector('[data-action="langs"]'), opts=body.querySelector('.main-menu-lang-options');lb.onclick=()=>{opts.hidden=!opts.hidden;lb.classList.toggle('open',!opts.hidden)};
   body.querySelectorAll('[data-menu-lang]').forEach(b=>b.onclick=()=>{setLang(b.dataset.menuLang);renderMenu()});
