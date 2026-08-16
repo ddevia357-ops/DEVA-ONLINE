@@ -1,61 +1,13 @@
-/* DEVA interaction reliability patch — categories, product details, menu/contact. */
+/* DEVA mobile interaction reliability patch — categories, details, contact. */
 (() => {
   'use strict';
+  const q=(s,r=document)=>r.querySelector(s);
+  const qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const norm=v=>String(v==null?'':v);
+  const data=()=>window.DEVA_DATA||{};
+  const findProduct=id=>Array.isArray(data().products)?data().products.find(p=>norm(p.id)===norm(id)):null;
 
-  const q = (s, root=document) => root.querySelector(s);
-  const qa = (s, root=document) => Array.from(root.querySelectorAll(s));
-
-  function normalizeId(v){ return String(v == null ? '' : v); }
-  function findProduct(id){
-    const data = window.DEVA_DATA;
-    if(!data || !Array.isArray(data.products)) return null;
-    const wanted = normalizeId(id);
-    return data.products.find(p => normalizeId(p.id) === wanted) || null;
-  }
-
-  function safeOpenProduct(id){
-    try {
-      if(typeof window.openModal === 'function'){
-        window.openModal(normalizeId(id));
-        return true;
-      }
-    } catch(e){ console.warn('DEVA openModal fallback:', e); }
-
-    // Standalone fallback in case the main click binding was interrupted.
-    const p = findProduct(id);
-    const modal = q('#modal');
-    if(!p || !modal) return false;
-    const main = q('#modalImg');
-    if(main) main.src = p.image || (Array.isArray(p.images) ? p.images[0] : '') || '';
-    const name = q('#modalName'); if(name) name.textContent = p.name || '';
-    const cat = q('#modalCat'); if(cat) cat.textContent = p.category || '';
-    const code = q('#modalCode'); if(code) code.textContent = 'CODE ' + String(p.code || p.product_code || '');
-    const price = q('#modalPrice'); if(price) price.textContent = p.price || '';
-    const wa = q('#modalWa');
-    if(wa) wa.href = 'https://wa.me/9647509412626?text=' + encodeURIComponent('DEVA FURNITURE\nPRODUCT: ' + (p.name || ''));
-    modal.classList.add('open');
-    return true;
-  }
-
-  function safeSelectCategory(cat){
-    const next = String(cat || 'all');
-    try {
-      if(typeof window.selectCategory === 'function'){
-        window.selectCategory(next);
-        return true;
-      }
-    } catch(e){ console.warn('DEVA selectCategory fallback:', e); }
-
-    // Minimal standalone filter if the main handler is unavailable.
-    qa('.product-card').forEach(card => {
-      const p = findProduct(card.dataset.id);
-      card.hidden = next !== 'all' && (!p || String(p.category) !== next);
-    });
-    q('#products')?.scrollIntoView({behavior:'smooth', block:'start'});
-    return true;
-  }
-
-  function closeMainMenu(){
+  function closeMenu(){
     q('#mainMenu')?.classList.remove('open');
     q('#mainMenuBackdrop')?.classList.remove('open');
     q('#mainMenu')?.setAttribute('aria-hidden','true');
@@ -63,106 +15,91 @@
     document.body.classList.remove('menu-open');
   }
 
-  function openContactPanel(){
-    closeMainMenu();
-    const modal=q('#contactModal');
-    if(modal){
-      modal.classList.add('open');
-      modal.setAttribute('aria-hidden','false');
+  function openCategory(cat){
+    closeMenu();
+    const next=norm(cat||'all');
+    try{ if(typeof window.selectCategory==='function'){ window.selectCategory(next); return true; } }catch(e){console.warn(e)}
+    qa('.product-card').forEach(card=>{
+      const p=findProduct(card.dataset.id);
+      card.hidden=next!=='all'&&(!p||norm(p.category)!==next);
+    });
+    q('#products')?.scrollIntoView({behavior:'smooth',block:'start'});
+    return true;
+  }
+
+  function openDetails(id){
+    closeMenu();
+    try{ if(typeof window.openModal==='function'){ window.openModal(norm(id)); return true; } }catch(e){console.warn(e)}
+    const p=findProduct(id), modal=q('#modal');
+    if(!p||!modal) return false;
+    const img=q('#modalImg'); if(img) img.src=p.image||p.images?.[0]||'';
+    const name=q('#modalName'); if(name) name.textContent=p.name||'';
+    const cat=q('#modalCat'); if(cat) cat.textContent=p.category||'';
+    const code=q('#modalCode'); if(code) code.textContent='CODE '+norm(p.code||p.product_code||'');
+    const price=q('#modalPrice'); if(price) price.textContent=p.price||'';
+    const wa=q('#modalWa'); if(wa) wa.href='https://wa.me/9647509412626?text='+encodeURIComponent('DEVA FURNITURE\nPRODUCT: '+(p.name||''));
+    modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+    document.body.classList.add('modal-open');
+    return true;
+  }
+
+  function openContact(){
+    closeMenu();
+    const m=q('#contactModal');
+    if(m){
+      m.classList.add('open'); m.setAttribute('aria-hidden','false');
       document.body.classList.add('modal-open');
       return true;
     }
-    const footer=q('#contact');
-    if(footer){
-      requestAnimationFrame(()=>footer.scrollIntoView({behavior:'smooth',block:'start'}));
-      return true;
-    }
-    return false;
+    q('#contact')?.scrollIntoView({behavior:'smooth',block:'start'});
+    return true;
   }
-
-  function closeContactPanel(){
-    const modal=q('#contactModal');
-    if(modal){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+  function closeContact(){
+    const m=q('#contactModal');
+    if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}
     document.body.classList.remove('modal-open');
   }
 
-  // Capture phase makes these interactions work even if another handler stops bubbling.
-  document.addEventListener('click', (e) => {
-    const category = e.target.closest('.category-card');
-    if(category){
-      e.preventDefault();
-      e.stopPropagation();
-      safeSelectCategory(category.dataset.cat);
-      return;
-    }
+  let lastHandled=0;
+  function handle(e){
+    if(!e.target || !e.target.closest) return;
+    const now=Date.now();
+    if(e.type==='click' && now-lastHandled<450) return;
+    const cat=e.target.closest('.category-card,[data-cat].collection-card');
+    if(cat){ e.preventDefault(); e.stopPropagation(); lastHandled=now; openCategory(cat.dataset.cat); return; }
+    const details=e.target.closest('.view-btn,[data-action="details"]');
+    if(details){ e.preventDefault(); e.stopPropagation(); lastHandled=now; openDetails(details.dataset.id||details.closest('.product-card')?.dataset.id); return; }
+    const card=e.target.closest('.product-card');
+    if(card && !e.target.closest('button,a,input,select,textarea,label')){ e.preventDefault(); e.stopPropagation(); lastHandled=now; openDetails(card.dataset.id); return; }
+    const contact=e.target.closest('[data-action="contact"],a[href="#contact"],#contactMenuLink');
+    if(contact){ e.preventDefault(); e.stopPropagation(); lastHandled=now; openContact(); return; }
+    if(e.target.closest('#contactModalClose')){ e.preventDefault(); lastHandled=now; closeContact(); return; }
+    const cm=q('#contactModal'); if(cm && e.target===cm){ closeContact(); return; }
+  }
 
-    const details = e.target.closest('.view-btn');
-    if(details){
-      e.preventDefault();
-      e.stopPropagation();
-      safeOpenProduct(details.dataset.id);
-      return;
-    }
+  // pointerup is the most reliable unified event for iOS/Android; click remains as fallback.
+  document.addEventListener('pointerup', handle, true);
+  document.addEventListener('click', handle, true);
 
-    // Make the whole product card open details, except interactive controls.
-    const card = e.target.closest('.product-card');
-    if(card && !e.target.closest('button,a,input,select,textarea')){
-      e.preventDefault();
-      safeOpenProduct(card.dataset.id);
-      return;
-    }
-
-    const contact = e.target.closest('[data-action="contact"],a[href="#contact"]');
-    if(contact){
-      e.preventDefault();
-      e.stopPropagation();
-      openContactPanel();
-      return;
-    }
-
-    if(e.target.closest('#contactModalClose')){
-      e.preventDefault();
-      closeContactPanel();
-      return;
-    }
-
-    const contactModal=q('#contactModal');
-    if(contactModal && e.target===contactModal){
-      closeContactPanel();
-      return;
-    }
-
-    const hashLink = e.target.closest('a[href^="#"]');
-    if(hashLink){
-      const href = hashLink.getAttribute('href');
-      if(href && href.length > 1){
-        const target = q(href);
-        if(target){
-          e.preventDefault();
-          closeMainMenu();
-          history.replaceState(null, '', href);
-          target.scrollIntoView({behavior:'smooth', block:'start'});
-        }
-      }
-    }
-  }, true);
-
-  // Ensure an old loader can never block clicks after page load.
-  window.addEventListener('load', () => {
-    const loader = q('#loader');
-    if(loader){
-      loader.classList.add('hide');
-      loader.style.pointerEvents = 'none';
-      setTimeout(() => { loader.style.display = 'none'; }, 900);
-    }
+  // Make touch targets explicitly interactive on mobile.
+  function arm(){
+    qa('.category-card,.product-card,.view-btn,[data-action="contact"],a[href="#contact"]').forEach(el=>{
+      el.style.touchAction='manipulation';
+      if(!el.hasAttribute('tabindex') && !['A','BUTTON'].includes(el.tagName)) el.setAttribute('tabindex','0');
+    });
+  }
+  new MutationObserver(arm).observe(document.documentElement,{subtree:true,childList:true});
+  document.addEventListener('DOMContentLoaded',arm,{once:true});
+  window.addEventListener('load',()=>{
+    arm();
+    const loader=q('#loader'); if(loader){loader.classList.add('hide');loader.style.pointerEvents='none';setTimeout(()=>loader.style.display='none',500)}
   });
 
-  // Remove stale service-worker caches from older site versions once.
+  // Remove stale SW/cache so phones don't keep an old broken interaction bundle.
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.ready.then(() => {
-      if('caches' in window){
-        caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('deva-') && k !== 'deva-v13-interactions').map(k => caches.delete(k)))).catch(()=>{});
-      }
-    }).catch(()=>{});
+    navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});
   }
+  if('caches' in window){ caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{}); }
+
+  window.DEVA_MOBILE_INTERACTIONS={openCategory,openDetails,openContact};
 })();

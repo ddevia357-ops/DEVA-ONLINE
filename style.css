@@ -305,3 +305,11 @@ body.light-theme .chat-panel{background:linear-gradient(180deg,#fff,#f7f3eb);bor
 .contact-mobile-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}.contact-action{display:flex!important;min-height:82px!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;padding:12px!important;border:1px solid #373126!important;border-radius:16px!important;background:#12110f!important;color:#f3eee4!important;text-decoration:none!important}.contact-action b{font-size:14px!important}.contact-action small{margin-top:5px!important;color:#a49d90!important}.contact-whatsapp{border-color:#6a572d!important;background:#17140e!important}
 .contact-mobile-social{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:8px!important;margin-top:12px!important}.contact-mobile-social a{padding:11px 6px!important;border:1px solid #2f2b24!important;border-radius:12px!important;color:#d8b45f!important;text-decoration:none!important;font-size:12px!important}
 @media(max-width:520px){.contact-mobile-modal{padding:0!important}.contact-mobile-box{border-radius:22px 22px 0 0!important;max-height:92dvh!important}.contact-mobile-actions{grid-template-columns:1fr!important}.contact-action{min-height:70px!important}.contact-mobile-social{grid-template-columns:1fr 1fr 1fr!important}}
+
+/* 2026-08-16 mobile interaction final */
+@media (max-width: 900px){
+ .category-card,.product-card,.view-btn,[data-action="contact"],a[href="#contact"]{pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(212,175,55,.18)}
+ #contactModal.open{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+ #modal.open{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+ #modal.open .product-modal,#contactModal.open .contact-mobile-box{pointer-events:auto!important}
+}
