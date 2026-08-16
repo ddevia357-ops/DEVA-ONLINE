@@ -1,0 +1,1 @@
+DEVA v6: Product detail modal opens only when the Details/View button is clicked or tapped. Touching/clicking the product image or card no longer opens details. Categories, Contact, wishlist and compare remain unchanged.

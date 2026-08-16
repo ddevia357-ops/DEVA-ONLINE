@@ -1,4 +1,4 @@
-/* DEVA mobile interaction reliability patch v5 — iOS/Android categories, details, contact. */
+/* DEVA mobile interaction reliability patch v6 — details open ONLY from the Details button. */
 (() => {
   'use strict';
   const q=(s,r=document)=>r.querySelector(s);
@@ -58,10 +58,6 @@
     if(contact){e.preventDefault();e.stopPropagation();openContact();return true;}
     const details=t.closest('.view-btn,[data-action="details"]');
     if(details){e.preventDefault();e.stopPropagation();openDetails(details.dataset.id||details.closest('.product-card')?.dataset.id);return true;}
-    const card=t.closest('.product-card');
-    if(card && !t.closest('.wish-toggle,.compare-toggle,a,input,select,textarea,label')){
-      e.preventDefault();e.stopPropagation();openDetails(card.dataset.id);return true;
-    }
     const category=t.closest('.category-card,[data-cat].collection-card');
     if(category){e.preventDefault();e.stopPropagation();openCategory(category.dataset.cat);return true;}
     return false;
@@ -73,7 +69,7 @@
   document.addEventListener('click',e=>{ if(Date.now()-touchAt<700) return; dispatch(e); },true);
 
   function arm(){
-    qa('.category-card,.product-card,.view-btn,[data-action="contact"],a[href="#contact"]').forEach(el=>{
+    qa('.category-card,.view-btn,[data-action="details"],[data-action="contact"],a[href="#contact"]').forEach(el=>{
       el.style.touchAction='manipulation';
       el.style.webkitTapHighlightColor='rgba(212,175,55,.18)';
       if(!el.hasAttribute('tabindex')&&!['A','BUTTON'].includes(el.tagName)) el.tabIndex=0;

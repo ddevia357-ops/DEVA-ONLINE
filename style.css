@@ -325,3 +325,7 @@ body.light-theme .chat-panel{background:linear-gradient(180deg,#fff,#f7f3eb);bor
   .view-btn{pointer-events:auto!important}
   #contactModal.open,#modal.open{pointer-events:auto!important}
 }
+
+/* DEVA v6: product details open only via Details button */
+.product-card,.product-image,.product-image img{cursor:default;}
+.product-card .view-btn{cursor:pointer;touch-action:manipulation;}
