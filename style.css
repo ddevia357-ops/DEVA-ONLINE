@@ -313,3 +313,15 @@ body.light-theme .chat-panel{background:linear-gradient(180deg,#fff,#f7f3eb);bor
  #modal.open{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
  #modal.open .product-modal,#contactModal.open .contact-mobile-box{pointer-events:auto!important}
 }
+
+/* Mobile interaction hardening v5 */
+.hero-overlay,.category-card::after,.product-image img,.category-card img{pointer-events:none!important}
+.main-menu-backdrop{pointer-events:none!important}.main-menu-backdrop.open{pointer-events:auto!important}
+.drawer-backdrop{pointer-events:none!important}.drawer-backdrop.open{pointer-events:auto!important}
+#loader.hide{pointer-events:none!important}
+@media(max-width:820px){
+  .category-card,.product-card,.view-btn,[data-action="contact"],a[href="#contact"]{position:relative;z-index:1;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none;user-select:none}
+  .category-card .label,.product-info{pointer-events:none}
+  .view-btn{pointer-events:auto!important}
+  #contactModal.open,#modal.open{pointer-events:auto!important}
+}
