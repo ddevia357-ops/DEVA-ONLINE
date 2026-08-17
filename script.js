@@ -252,3 +252,7 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
  btn.onclick=showMenu;close.onclick=hideMenu;if(back)back.onclick=hideMenu;document.addEventListener('keydown',e=>{if(e.key==='Escape')hideMenu()});
  window.addEventListener('deva-language-change',renderMenu);renderMenu();
 })();
+
+// D11: public navigation hooks used by the mobile/direct-link reliability patch.
+window.selectCategory = selectCategory;
+window.openModal = openModal;

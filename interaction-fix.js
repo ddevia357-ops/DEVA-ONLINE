@@ -105,5 +105,24 @@
   if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});}
   if('caches' in window){caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});}
 
+  // Always honor direct category URLs, including first load, reload and BFCache restore.
+  function syncCategoryFromHash(){
+    const m=location.hash.match(/^#category-([a-z0-9_-]+)$/i);
+    if(!m) return;
+    const wanted=m[1];
+    const data=(window.DEVA_DATA||{}).products||[];
+    if(!data.some(p=>String(p.category)===wanted)) return;
+    // script.js keeps `cat` in module/global lexical scope; selectCategory is the supported setter.
+    if(typeof window.selectCategory==='function') window.selectCategory(wanted,false);
+    else {
+      const btn=qa('.filter[data-cat],#filterButtons [data-cat]').find(x=>norm(x.dataset.cat)===wanted);
+      if(btn) btn.click();
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(syncCategoryFromHash,0),{once:true});
+  window.addEventListener('load',()=>setTimeout(syncCategoryFromHash,50));
+  window.addEventListener('pageshow',()=>setTimeout(syncCategoryFromHash,50));
+  window.addEventListener('hashchange',()=>setTimeout(syncCategoryFromHash,0));
+
   window.DEVA_MOBILE_INTERACTIONS={openCategory,openDetails,openContact,closeContact};
 })();
