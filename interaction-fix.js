@@ -63,6 +63,20 @@
     return false;
   }
 
+
+  // Product cards/images are display-only. Product details may open ONLY from the Details button.
+  function blockCardActivation(e){
+    const t=targetFromEvent(e); if(!t) return;
+    const card=t.closest('.product-card'); if(!card) return;
+    if(t.closest('.view-btn,[data-action="details"],.wish-toggle,[data-wish],.compare-toggle,[data-compare]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+  document.addEventListener('pointerup',blockCardActivation,true);
+  document.addEventListener('touchend',blockCardActivation,{capture:true,passive:false});
+  document.addEventListener('click',blockCardActivation,true);
+
   // iOS Safari can lose synthetic click events after overlays/scrolling. Handle touchend directly.
   let touchAt=0;
   document.addEventListener('touchend',e=>{ if(dispatch(e)) touchAt=Date.now(); },{capture:true,passive:false});
