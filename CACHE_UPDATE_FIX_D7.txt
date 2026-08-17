@@ -1,0 +1,6 @@
+DEVA D7 cache/update fix - 2026-08-17
+- Versioned all main CSS/JS references in index.html.
+- HTML/JS/CSS/service worker responses use no-store/no-cache.
+- express.static maxAge changed to 0 for app shell/code files.
+- Legacy service workers remain unregistered and caches are deleted by sw.js if encountered.
+- Product/static image assets retain a modest cache lifetime.
