@@ -1,0 +1,1 @@
+D9: Admin product editor now supports current price and old price. Discount percentage preview is automatic. Existing design/features preserved.

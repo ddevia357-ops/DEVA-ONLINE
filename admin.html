@@ -109,7 +109,9 @@
               <select id="pcat" required>
                 <option value="">بەش هەڵبژێرە</option><option value="sofa">قەنەفە</option><option value="bedroom">ژووری نووستن</option><option value="corner">قەنەفەی L</option><option value="tv">مێزی تەلەڤیزیۆن</option><option value="console">کۆنسۆل</option><option value="dining">مێزی نانخواردن</option><option value="coffee">مێزی ناوەڕاست</option><option value="door">دەرگا</option><option value="clock">کاتژمێری دیواری</option><option value="decor">دیکۆر</option>
               </select>
-              <input id="pprice" type="number" step="0.01" min="0" placeholder="نرخ بە دۆلار" required>
+              <label>نرخی ئێستا ($)<input id="pprice" type="number" step="0.01" min="0" placeholder="نرخی نوێ / فرۆشتن" required></label>
+              <label>نرخی پێشوو ($) — بۆ داشکاندن<input id="poldprice" type="number" step="0.01" min="0" placeholder="بۆ نموونە 1960"></label>
+              <div id="pricePreview" class="full muted">نرخەکە بنووسە؛ ئەگەر نرخی پێشوو گەورەتر بێت، داشکاندن خۆکارانە پیشان دەدرێت.</div>
               <input id="pstock" type="number" min="0" step="1" value="0" placeholder="ژمارەی Stock">
               <input id="plowstock" type="number" min="0" step="1" value="2" placeholder="ئاگادارکردنەوە لە Stock کەم">
               <input id="pimage" placeholder="Image URL / path (ئارەزوومەندانە)">
