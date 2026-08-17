@@ -32,3 +32,6 @@
 
 /* Auto product code */
 .product-code-field{display:grid;gap:6px}.product-code-field input{font-weight:800;letter-spacing:.12em;text-align:center}.product-code-field small{letter-spacing:0;font-weight:400}
+
+/* D13 Easy Price Manager */
+.price-manager-toolbar{display:flex;gap:12px;align-items:center;margin:14px 0}.price-manager-toolbar input{flex:1;min-width:220px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text)}.price-edit-row{grid-template-columns:72px minmax(180px,1fr) minmax(360px,1.4fr) auto}.quick-price-box{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}.quick-price-box label{display:grid;gap:5px;font-size:12px;color:var(--muted)}.quick-price-box input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-weight:800}.quick-price-save{white-space:nowrap;padding:11px 12px;border-radius:10px}@media(max-width:1000px){.price-edit-row{grid-template-columns:60px 1fr}.quick-price-box,.price-edit-row .product-admin-actions{grid-column:1/-1}}@media(max-width:600px){.price-manager-toolbar{display:grid}.quick-price-box{grid-template-columns:1fr 1fr}.quick-price-save{grid-column:1/-1}}
