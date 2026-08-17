@@ -172,16 +172,45 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
 // Dynamic products created from Admin Dashboard.
 (async function loadDashboardProducts(){
   try{
-    const r=await fetch('/api/products',{cache:'no-store'});if(!r.ok)return;const rows=await r.json();if(!Array.isArray(rows))return;
-    // Once the API is reachable, SQLite is the single source of truth.
-    // data.js is only an offline fallback, so a product deleted in DEVA Admin cannot reappear.
-    D.products=rows.map(x=>{
-      let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
-      if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
-      return {id:x.id,name:x.name,category:x.category,image:x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:gallery,code:x.product_code||''};
-    });
-    renderFilters();renderProducts();renderRecent();
-  }catch{}
+    // Keep the built-in catalog as a safe public fallback. Render free instances can
+    // briefly start with an empty/recreated SQLite database during a deploy.
+    const builtinProducts=Array.isArray(D.products)?D.products.slice():[];
+    const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    if(!r.ok) return;
+    const rows=await r.json();
+    if(!Array.isArray(rows)) return;
+
+    // IMPORTANT: never replace a valid built-in catalog with an empty API response.
+    // This is what caused category pages such as #category-corner to show no products
+    // immediately after a Render deploy.
+    if(rows.length>0){
+      const apiProducts=rows.map(x=>{
+        let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
+        if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
+        return {id:x.id,name:x.name,category:x.category,image:x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:gallery,code:x.product_code||''};
+      });
+      // If a fresh/partial DB accidentally lacks the category requested by the URL,
+      // preserve that category from data.js so the public showroom never opens empty.
+      const hashCat=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+      if(hashCat && !apiProducts.some(p=>p.category===hashCat)){
+        const fallbackCat=builtinProducts.filter(p=>p.category===hashCat);
+        D.products=fallbackCat.length?[...apiProducts,...fallbackCat]:apiProducts;
+      }else{
+        D.products=apiProducts;
+      }
+    }else{
+      D.products=builtinProducts;
+    }
+
+    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
+    renderFilters();renderProducts();renderRecent();updateCategoryNav();
+  }catch(e){
+    // Network/API failure: retain data.js products and still honor the direct category URL.
+    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
+    renderFilters();renderProducts();renderRecent();updateCategoryNav();
+  }
 })();
 
 

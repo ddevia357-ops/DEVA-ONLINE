@@ -1,0 +1,1 @@
+D12: Prevent empty /api/products responses from replacing built-in catalog; preserve requested hash category after API load.
