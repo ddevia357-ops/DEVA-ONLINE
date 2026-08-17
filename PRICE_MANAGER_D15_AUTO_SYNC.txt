@@ -1,0 +1,1 @@
+D15: Robust built-in catalog restore + Admin auto-sync when products table is empty. Existing product edits are preserved via INSERT OR IGNORE.
