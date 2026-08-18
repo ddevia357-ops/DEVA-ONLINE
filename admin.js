@@ -1,4 +1,4 @@
-const DEVA_ADMIN_BUILD='D26';
+const DEVA_ADMIN_BUILD='D27';
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);let csrfToken='',me=null,loginNeeds2fa=false,sessionToken=sessionStorage.getItem('deva_admin_token')||'';
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const note=(m,ok=true)=>{const n=$('#notice');n.textContent=m;n.className=ok?'ok':'error';setTimeout(()=>n.textContent='',4000)};
@@ -35,7 +35,7 @@ async function load(force=false){
 }
 
 function bindRows(){
-  $$('[data-save-price]').forEach(b=>b.onclick=async()=>{const id=b.dataset.savePrice;const x=(window.__adminProducts||[]).find(p=>p.id===id);const price=Number(document.querySelector(`[data-qprice="${CSS.escape(id)}"]`)?.value||0);const old=Number(document.querySelector(`[data-qoldprice="${CSS.escape(id)}"]`)?.value||0);if(!x)return note('بەرهەمەکە نەدۆزرایەوە',false);b.disabled=true;try{const saved=await api('/api/admin/products/'+encodeURIComponent(id)+'/price',{method:'PATCH',body:JSON.stringify({price_usd:price,old_price_usd:old})});x.price_usd=price;x.old_price_usd=old;if(saved?.product_code)x.product_code=saved.product_code;if(saved?.id&&saved.id!==x.id)x.id=saved.id;window.__adminProducts=(window.__adminProducts||[]).filter((p,i,a)=>a.findIndex(q=>String(q.id)===String(p.id)||(p.product_code&&q.product_code===p.product_code))===i);note('✓ نرخ گۆڕدرا — هەمان بەرهەم، هەمان وێنە و هەمان کۆد');renderAdminProducts(window.__adminProducts||[])}catch(e){note(e.message,false)}finally{b.disabled=false}});
+  $$('[data-save-price]').forEach(b=>b.onclick=async()=>{const id=b.dataset.savePrice;const x=(window.__adminProducts||[]).find(p=>p.id===id);const price=Number(document.querySelector(`[data-qprice="${CSS.escape(id)}"]`)?.value||0);const old=Number(document.querySelector(`[data-qoldprice="${CSS.escape(id)}"]`)?.value||0);if(!x)return note('بەرهەمەکە نەدۆزرایەوە',false);b.disabled=true;try{const saved=await api('/api/admin/products/'+encodeURIComponent(id)+'/price',{method:'PATCH',body:JSON.stringify({price_usd:price,old_price_usd:old})});x.price_usd=price;x.old_price_usd=old;if(saved?.product_code)x.product_code=saved.product_code;window.__adminProducts=(window.__adminProducts||[]).filter((p,i,a)=>a.findIndex(q=>String(q.id)===String(p.id)||(p.product_code&&q.product_code===p.product_code))===i);note('✓ نرخ گۆڕدرا — هەمان بەرهەم، هەمان وێنە و هەمان کۆد');renderAdminProducts(window.__adminProducts||[])}catch(e){note(e.message,false)}finally{b.disabled=false}});
   $$('[data-edit-product]').forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
   $$('[data-toggle-product]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.toggleProduct)+'/active',{method:'PATCH',body:JSON.stringify({active:b.dataset.active!=='1'})});note(b.dataset.active==='1'?'بەرهەم ناچالاک کرا':'بەرهەم چالاک کرا');load()}catch(e){note(e.message,false)}});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');load()}catch(e){note(e.message,false)}});
@@ -129,7 +129,7 @@ function renderDashboard(orders){
   window.__lastOrders=orders;drawOrdersChart(orders);renderStatusBreakdown(orders);renderNotifications(orders);
   const sig=orders.slice(0,5).map(x=>x.id+':'+x.status).join('|');
   if(lastOrderSignature&&sig!==lastOrderSignature)note('داواکارییەکان نوێ بوونەوە');lastOrderSignature=sig;
-  if(!liveTimer)liveTimer=true; // D26: automatic full-dashboard polling disabled
+  if(!liveTimer)liveTimer=true; // D27: automatic full-dashboard polling disabled
 }
 function renderStatusBreakdown(orders){
   const statuses=['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'];
@@ -184,5 +184,5 @@ window.addEventListener('resize',()=>{if(analyticsData)drawAnalyticsChart(analyt
 
 const __rp=$('#refreshProductsBtn');if(__rp)__rp.onclick=()=>load(true);
 
-// D26: visibility-triggered full reload disabled
+// D27: visibility-triggered full reload disabled
 const __ps=$('#productAdminSearch');if(__ps)__ps.addEventListener('input',()=>renderAdminProducts(window.__adminProducts||[]));

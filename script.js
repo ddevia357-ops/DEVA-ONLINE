@@ -189,15 +189,19 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
         if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
         const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
       });
-      // If a fresh/partial DB accidentally lacks the category requested by the URL,
-      // preserve that category from data.js so the public showroom never opens empty.
-      const hashCat=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
-      if(hashCat && !apiProducts.some(p=>p.category===hashCat)){
-        const fallbackCat=builtinProducts.filter(p=>p.category===hashCat);
-        D.products=fallbackCat.length?[...apiProducts,...fallbackCat]:apiProducts;
-      }else{
-        D.products=apiProducts;
-      }
+      // D27: API is an overlay, never the whole catalog. A partial Render/SQLite
+      // response must not remove categories from the showroom.
+      const apiById=new Map(apiProducts.map(p=>[String(p.id),p]));
+      const apiByCode=new Map(apiProducts.filter(p=>p.code).map(p=>[String(p.code),p]));
+      const merged=builtinProducts.map(b=>{
+        const a=apiById.get(String(b.id))||apiByCode.get(String(b.code||''));
+        return a?{...b,...a,id:b.id,name:b.name,category:b.category,image:b.image,images:(b.images&&b.images.length)?b.images:a.images,code:b.code||a.code}:b;
+      });
+      // Keep genuine Admin-only products too, but never duplicate a built-in identity.
+      const builtinIds=new Set(builtinProducts.map(b=>String(b.id)));
+      const builtinCodes=new Set(builtinProducts.map(b=>String(b.code||'')));
+      const adminOnly=apiProducts.filter(a=>!builtinIds.has(String(a.id))&&!builtinCodes.has(String(a.code||'')));
+      D.products=[...merged,...adminOnly];
     }else{
       D.products=builtinProducts;
     }
