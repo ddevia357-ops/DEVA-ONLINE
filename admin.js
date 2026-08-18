@@ -24,10 +24,17 @@ function mergeAdminProducts(dbRows){
   for(const row of Array.isArray(dbRows)?dbRows:[]){byId.set(row.id,{...byId.get(row.id),...row,__fallback:false});}
   return [...byId.values()].sort((a,b)=>Number(a.product_code||999999)-Number(b.product_code||999999));
 }
-async function load(){let [dbProducts,o]=await Promise.all([api('/api/admin/products'),api('/api/admin/orders')]);const p=mergeAdminProducts(dbProducts);$('#statProducts').textContent=p.length;$('#statOrders').textContent=o.length;$('#statPending').textContent=o.filter(x=>x.status==='PENDING').length;$('#statLowStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)>0&&Number(x.stock_qty)<=Number(x.low_stock_threshold)).length;$('#statOutStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)<=0).length;window.__adminProducts=p;renderAdminProducts(p);const pcb=$('#productCountBadge');if(pcb)pcb.textContent='('+p.length+')';$('#orders').innerHTML=o.map(x=>`<div class="row"><div><b>${esc(x.id)}</b><div class="muted">${esc(x.customer_name)} · ${esc(x.phone)} · ${esc(x.payment_status)}</div></div><span>${Number(x.total_iqd).toLocaleString()} IQD</span><select data-order="${esc(x.id)}">${['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></div>`).join('');renderDashboard(o);$('#recentOverview').innerHTML=o.slice(0,5).map(x=>`<div class="row"><b>${esc(x.id)}</b><span>${esc(x.status)}</span><span>${esc(x.created_at)}</span></div>`).join('')||'<p class="muted">هیچ داواکارییەک نییە</p>';bindRows()}
+async function load(force=false){
+  if(loadInFlight)return loadInFlight;
+  if(!force&&Date.now()-lastLoadAt<5000)return;
+  loadInFlight=(async()=>{
+    let [dbProducts,o]=await Promise.all([api('/api/admin/products'),api('/api/admin/orders')]);const p=mergeAdminProducts(dbProducts);$('#statProducts').textContent=p.length;$('#statOrders').textContent=o.length;$('#statPending').textContent=o.filter(x=>x.status==='PENDING').length;$('#statLowStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)>0&&Number(x.stock_qty)<=Number(x.low_stock_threshold)).length;$('#statOutStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)<=0).length;window.__adminProducts=p;renderAdminProducts(p);const pcb=$('#productCountBadge');if(pcb)pcb.textContent='('+p.length+')';$('#orders').innerHTML=o.map(x=>`<div class="row"><div><b>${esc(x.id)}</b><div class="muted">${esc(x.customer_name)} · ${esc(x.phone)} · ${esc(x.payment_status)}</div></div><span>${Number(x.total_iqd).toLocaleString()} IQD</span><select data-order="${esc(x.id)}">${['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></div>`).join('');renderDashboard(o);$('#recentOverview').innerHTML=o.slice(0,5).map(x=>`<div class="row"><b>${esc(x.id)}</b><span>${esc(x.status)}</span><span>${esc(x.created_at)}</span></div>`).join('')||'<p class="muted">هیچ داواکارییەک نییە</p>';bindRows();lastLoadAt=Date.now();
+  })();
+  try{return await loadInFlight}finally{loadInFlight=null}
+}
 
 function bindRows(){
-  $$('[data-save-price]').forEach(b=>b.onclick=async()=>{const id=b.dataset.savePrice;const x=(window.__adminProducts||[]).find(p=>p.id===id);const price=Number(document.querySelector(`[data-qprice="${CSS.escape(id)}"]`)?.value||0);const old=Number(document.querySelector(`[data-qoldprice="${CSS.escape(id)}"]`)?.value||0);if(!x)return note('بەرهەمەکە نەدۆزرایەوە',false);b.disabled=true;try{await api('/api/admin/products/'+encodeURIComponent(id)+'/price',{method:'PATCH',body:JSON.stringify({price_usd:price,old_price_usd:old})});note('✓ تەنها نرخەکە گۆڕدرا — ناو، کۆد، وێنە و بەش وەک خۆیان ماونەتەوە');await load()}catch(e){note(e.message,false)}finally{b.disabled=false}});
+  $$('[data-save-price]').forEach(b=>b.onclick=async()=>{const id=b.dataset.savePrice;const x=(window.__adminProducts||[]).find(p=>p.id===id);const price=Number(document.querySelector(`[data-qprice="${CSS.escape(id)}"]`)?.value||0);const old=Number(document.querySelector(`[data-qoldprice="${CSS.escape(id)}"]`)?.value||0);if(!x)return note('بەرهەمەکە نەدۆزرایەوە',false);b.disabled=true;try{await api('/api/admin/products/'+encodeURIComponent(id)+'/price',{method:'PATCH',body:JSON.stringify({price_usd:price,old_price_usd:old})});x.price_usd=price;x.old_price_usd=old;note('✓ تەنها نرخەکە گۆڕدرا — ناو، کۆد، وێنە و بەش وەک خۆیان ماونەتەوە');renderAdminProducts(window.__adminProducts||[])}catch(e){note(e.message,false)}finally{b.disabled=false}});
   $$('[data-edit-product]').forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
   $$('[data-toggle-product]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.toggleProduct)+'/active',{method:'PATCH',body:JSON.stringify({active:b.dataset.active!=='1'})});note(b.dataset.active==='1'?'بەرهەم ناچالاک کرا':'بەرهەم چالاک کرا');load()}catch(e){note(e.message,false)}});
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');load()}catch(e){note(e.message,false)}});
@@ -90,7 +97,7 @@ if(sessionToken){start().catch(()=>localLogout());}else{localLogout();}
 
 
 const tabTitles={overviewTab:'پوختە',analyticsTab:'Analytics',productsTab:'بەرهەمەکان',ordersTab:'داواکارییەکان',giftsTab:'دیاریی مانگانە',rewardsTab:'DEVA Rewards',adsTab:'ڕیکلام و Sponsor',securityTab:'Security Center',adminsTab:'Admin ـەکان',logsTab:'Audit Log',settingsTab:'ڕێکخستن'};
-let liveTimer=null,lastOrderSignature='';
+let liveTimer=null,lastOrderSignature='',loadInFlight=null,lastLoadAt=0;
 function switchTab(id){
   $$('.tab').forEach(t=>t.hidden=true);const target=$('#'+id);if(target)target.hidden=false;
   $$('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
@@ -110,7 +117,7 @@ function initDashboardUI(){
   $('#sidebarOverlay').onclick=closeSidebar;
   $('#notificationBtn').onclick=()=>$('#notificationPanel').hidden=!$('#notificationPanel').hidden;
   $('#closeNotifications').onclick=()=>$('#notificationPanel').hidden=true;
-  $('#refreshDashboard').onclick=load;
+  $('#refreshDashboard').onclick=()=>load(true);
   const d=new Intl.DateTimeFormat('ku',{dateStyle:'full'}).format(new Date());$('#todayText').textContent=d;
   window.addEventListener('resize',()=>{if(window.__lastOrders)drawOrdersChart(window.__lastOrders)});
 }
@@ -121,7 +128,7 @@ function renderDashboard(orders){
   window.__lastOrders=orders;drawOrdersChart(orders);renderStatusBreakdown(orders);renderNotifications(orders);
   const sig=orders.slice(0,5).map(x=>x.id+':'+x.status).join('|');
   if(lastOrderSignature&&sig!==lastOrderSignature)note('داواکارییەکان نوێ بوونەوە');lastOrderSignature=sig;
-  if(!liveTimer)liveTimer=setInterval(()=>{if(me)load().catch(()=>{})},30000);
+  if(!liveTimer)liveTimer=setInterval(()=>{if(me&&!document.hidden)load().catch(()=>{})},120000);
 }
 function renderStatusBreakdown(orders){
   const statuses=['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'];
@@ -174,5 +181,7 @@ function drawAnalyticsChart(rows){
 if($('#refreshAnalytics'))$('#refreshAnalytics').onclick=loadAnalytics;if($('#analyticsDays'))$('#analyticsDays').onchange=loadAnalytics;
 window.addEventListener('resize',()=>{if(analyticsData)drawAnalyticsChart(analyticsData.daily)});
 
-const __rp=$('#refreshProductsBtn');if(__rp)__rp.onclick=()=>load();
+const __rp=$('#refreshProductsBtn');if(__rp)__rp.onclick=()=>load(true);
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me&&Date.now()-lastLoadAt>10000)load(true).catch(()=>{})});
 const __ps=$('#productAdminSearch');if(__ps)__ps.addEventListener('input',()=>renderAdminProducts(window.__adminProducts||[]));
