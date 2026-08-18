@@ -187,7 +187,7 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
       const apiProducts=rows.map(x=>{
         let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
         if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
-        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)); const safeCode=(x.product_code&&x.product_code!=='0000')?x.product_code:(builtin?.code||''); return {id:x.id,name:x.name,category:x.category,image:x.image||gallery[0]||builtin?.image||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:gallery.length?gallery:(builtin?.images||[]),code:safeCode};
+        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
       });
       // If a fresh/partial DB accidentally lacks the category requested by the URL,
       // preserve that category from data.js so the public showroom never opens empty.
