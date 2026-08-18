@@ -20,5 +20,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function nextFri(){const now=new Date();for(let i=0;i<8;i++){const d=new Date(now);d.setDate(now.getDate()+i);d.setHours(21,0,0,0);if(d.getDay()===5&&d>now)return d}const d=new Date(now);d.setDate(now.getDate()+7);d.setHours(21,0,0,0);return d}
  function clock(){const el=document.querySelector('#rLiveCountdown');if(!el)return;let t=Math.max(0,nextFri()-new Date()),s=Math.floor(t/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),x=s%60;el.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`}
  async function live(){try{const d=await api('/api/admin/rewards/live');document.querySelector('#rOnlineNow').textContent=Number(d.onlineNow||0).toLocaleString();document.querySelector('#rRewardsNow').textContent=Number(d.inRewardsNow||0).toLocaleString();document.querySelector('#rWaitingNow').textContent=Number(d.waitingForDraw||0).toLocaleString()}catch{}}
- setInterval(clock,1000);setInterval(live,10000);clock();live();
+ setInterval(clock,1000);
+ let rewardsLiveTimer=null;
+ function startRewardsLive(){
+   if(rewardsLiveTimer)return;
+   rewardsLiveTimer=setInterval(()=>{if(!document.hidden)live()},60000);
+ }
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)live()});
+ startRewardsLive();clock();live();
 })();
