@@ -1,3 +1,4 @@
+const DEVA_ADMIN_BUILD='D26';
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);let csrfToken='',me=null,loginNeeds2fa=false,sessionToken=sessionStorage.getItem('deva_admin_token')||'';
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const note=(m,ok=true)=>{const n=$('#notice');n.textContent=m;n.className=ok?'ok':'error';setTimeout(()=>n.textContent='',4000)};
@@ -128,7 +129,7 @@ function renderDashboard(orders){
   window.__lastOrders=orders;drawOrdersChart(orders);renderStatusBreakdown(orders);renderNotifications(orders);
   const sig=orders.slice(0,5).map(x=>x.id+':'+x.status).join('|');
   if(lastOrderSignature&&sig!==lastOrderSignature)note('داواکارییەکان نوێ بوونەوە');lastOrderSignature=sig;
-  if(!liveTimer)liveTimer=setInterval(()=>{if(me&&!document.hidden)load().catch(()=>{})},120000);
+  if(!liveTimer)liveTimer=true; // D26: automatic full-dashboard polling disabled
 }
 function renderStatusBreakdown(orders){
   const statuses=['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'];
@@ -183,5 +184,5 @@ window.addEventListener('resize',()=>{if(analyticsData)drawAnalyticsChart(analyt
 
 const __rp=$('#refreshProductsBtn');if(__rp)__rp.onclick=()=>load(true);
 
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&me&&Date.now()-lastLoadAt>10000)load(true).catch(()=>{})});
+// D26: visibility-triggered full reload disabled
 const __ps=$('#productAdminSearch');if(__ps)__ps.addEventListener('input',()=>renderAdminProducts(window.__adminProducts||[]));

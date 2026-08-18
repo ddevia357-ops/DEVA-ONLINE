@@ -21,11 +21,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function clock(){const el=document.querySelector('#rLiveCountdown');if(!el)return;let t=Math.max(0,nextFri()-new Date()),s=Math.floor(t/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),x=s%60;el.textContent=`${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`}
  async function live(){try{const d=await api('/api/admin/rewards/live');document.querySelector('#rOnlineNow').textContent=Number(d.onlineNow||0).toLocaleString();document.querySelector('#rRewardsNow').textContent=Number(d.inRewardsNow||0).toLocaleString();document.querySelector('#rWaitingNow').textContent=Number(d.waitingForDraw||0).toLocaleString()}catch{}}
  setInterval(clock,1000);
- let rewardsLiveTimer=null;
- function startRewardsLive(){
-   if(rewardsLiveTimer)return;
-   rewardsLiveTimer=setInterval(()=>{if(!document.hidden)live()},60000);
- }
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)live()});
- startRewardsLive();clock();live();
+ // D26: no background rewards polling; fetch on explicit tab/refresh actions only.
+ clock();
 })();
