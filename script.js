@@ -175,7 +175,7 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
     // Keep the built-in catalog as a safe public fallback. Render free instances can
     // briefly start with an empty/recreated SQLite database during a deploy.
     const allBuiltinProducts=Array.isArray(D.products)?D.products.slice():[];
-    let tombstones=[];try{const tr=await fetch('/api/product-tombstones?ts='+Date.now(),{cache:'no-store'});if(tr.ok)tombstones=await tr.json()}catch{}
+    let tombstones=[]; // D30: no extra endpoint dependency
     const deletedIds=new Set((tombstones||[]).map(x=>String(x.product_id||'')));const deletedCodes=new Set((tombstones||[]).map(x=>String(x.product_code||'')));
     const builtinProducts=allBuiltinProducts.filter(p=>!deletedIds.has(String(p.id))&&!deletedCodes.has(String(p.code||'')));
     const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
