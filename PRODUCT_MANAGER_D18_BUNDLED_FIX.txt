@@ -1,0 +1,1 @@
+D18: bundles all 155 catalog products inside server/src/builtin-products.json so Render database recovery no longer depends on locating/parsing root data.js. Admin products endpoint forces restore and returns HTTP 500 with diagnostic detail instead of silently showing 0 if restore fails.
