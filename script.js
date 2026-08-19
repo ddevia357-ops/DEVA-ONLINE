@@ -1,4 +1,4 @@
-const D=window.DEVA_DATA;let lang=localStorage.getItem('deva-lang')||'ku',cat='all',query='',priceRange='all',currentProduct=null;
+const D=(window.DEVA_DATA&&Array.isArray(window.DEVA_DATA.products))?window.DEVA_DATA:{products:[],categories:[],translations:{ku:{},ar:{},en:{},tr:{}}};const DEVA_BUILTIN_PRODUCTS=Array.isArray(D.products)?D.products.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]})):[];let lang=localStorage.getItem('deva-lang')||'ku',cat='all',query='',priceRange='all',currentProduct=null;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let cart=load('deva-cart-v2',{}),wishlist=load('deva-wishlist',[]),compare=load('deva-compare',[]),recent=load('deva-recent',[]),ratings=load('deva-ratings',{});
@@ -170,56 +170,63 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
 
 
 // Dynamic products created from Admin Dashboard.
+// D32: the showroom is local-first. The 155 bundled products render immediately,
+// and the API may only overlay mutable fields (prices/stock/active) onto that catalog.
 (async function loadDashboardProducts(){
-  try{
-    // Keep the built-in catalog as a safe public fallback. Render free instances can
-    // briefly start with an empty/recreated SQLite database during a deploy.
-    const allBuiltinProducts=Array.isArray(D.products)?D.products.slice():[];
-    let tombstones=[]; // D30: no extra endpoint dependency
-    const deletedIds=new Set((tombstones||[]).map(x=>String(x.product_id||'')));const deletedCodes=new Set((tombstones||[]).map(x=>String(x.product_code||'')));
-    const builtinProducts=allBuiltinProducts.filter(p=>!deletedIds.has(String(p.id))&&!deletedCodes.has(String(p.code||'')));
-    const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
-    if(!r.ok) return;
-    const rows=await r.json();
-    if(!Array.isArray(rows)) return;
-
-    // IMPORTANT: never replace a valid built-in catalog with an empty API response.
-    // This is what caused category pages such as #category-corner to show no products
-    // immediately after a Render deploy.
-    if(rows.length>0){
-      const apiProducts=rows.map(x=>{
-        let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
-        if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
-        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd ?? x.oldPrice ?? 0)>0?Number(x.old_price_usd ?? x.oldPrice).toLocaleString('en-US')+'$':'',images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
-      });
-      // D27: API is an overlay, never the whole catalog. A partial Render/SQLite
-      // response must not remove categories from the showroom.
-      const apiById=new Map(apiProducts.map(p=>[String(p.id),p]));
-      const apiByCode=new Map(apiProducts.filter(p=>p.code).map(p=>[String(p.code),p]));
-      const merged=builtinProducts.map(b=>{
-        const a=apiById.get(String(b.id))||apiByCode.get(String(b.code||''));
-        return a?{...b,...a,id:b.id,name:b.name,category:b.category,image:b.image,images:(b.images&&b.images.length)?b.images:a.images,code:b.code||a.code}:b;
-      });
-      // Keep genuine Admin-only products too, but never duplicate a built-in identity.
-      const builtinIds=new Set(builtinProducts.map(b=>String(b.id)));
-      const builtinCodes=new Set(builtinProducts.map(b=>String(b.code||'')));
-      const adminOnly=apiProducts.filter(a=>!builtinIds.has(String(a.id))&&!builtinCodes.has(String(a.code||'')));
-      D.products=[...merged,...adminOnly];
-    }else{
-      D.products=builtinProducts;
-    }
-
-    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
-    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
-    renderFilters();renderProducts();renderRecent();updateCategoryNav();
-  }catch(e){
-    // Network/API failure: retain data.js products and still honor the direct category URL.
+  const allBuiltinProducts=DEVA_BUILTIN_PRODUCTS.map(p=>({...p,images:Array.isArray(p.images)?[...p.images]:[]}));
+  if(allBuiltinProducts.length){
+    D.products=allBuiltinProducts;
     const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
     if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
     renderFilters();renderProducts();renderRecent();updateCategoryNav();
   }
-})();
+  try{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),6000);
+    const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'},signal:controller.signal});
+    clearTimeout(timer);
+    if(!r.ok) return;
+    const rows=await r.json();
+    if(!Array.isArray(rows)||!rows.length) return;
 
+    const byId=new Map(rows.map(x=>[String(x.id||''),x]));
+    const byCode=new Map(rows.filter(x=>x.product_code).map(x=>[String(x.product_code),x]));
+    const byNameCategory=new Map(rows.map(x=>[`${String(x.category||'').toLowerCase()}|${String(x.name||'').trim().toLowerCase()}`,x]));
+
+    const merged=allBuiltinProducts.map(b=>{
+      const row=byId.get(String(b.id))||byCode.get(String(b.code||''))||byNameCategory.get(`${String(b.category||'').toLowerCase()}|${String(b.name||'').trim().toLowerCase()}`);
+      if(!row) return b;
+      const active=Number(row.active??1)!==0;
+      if(!active) return null;
+      const priceNum=Number(row.price_usd||0);
+      const oldNum=Number(row.old_price_usd??row.oldPrice??0);
+      return {...b,
+        price:priceNum>0?priceNum.toLocaleString('en-US')+'$':b.price,
+        oldPrice:oldNum>0?oldNum.toLocaleString('en-US')+'$':'',
+        stock_qty:row.stock_qty??b.stock_qty,
+        low_stock_threshold:row.low_stock_threshold??b.low_stock_threshold
+      };
+    }).filter(Boolean);
+
+    // Preserve Admin-only products without ever replacing the bundled catalog.
+    const builtinIds=new Set(allBuiltinProducts.map(b=>String(b.id)));
+    const builtinCodes=new Set(allBuiltinProducts.map(b=>String(b.code||'')));
+    const adminOnly=rows.filter(x=>Number(x.active??1)!==0 && !builtinIds.has(String(x.id)) && !builtinCodes.has(String(x.product_code||''))).map(x=>{
+      let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
+      if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
+      return {id:x.id,name:x.name,category:x.category,image:x.image||gallery[0]||'',images:gallery,
+        code:(x.product_code&&x.product_code!=='0000')?x.product_code:'',
+        price:Number(x.price_usd||0)>0?Number(x.price_usd).toLocaleString('en-US')+'$':'',
+        oldPrice:Number(x.old_price_usd||0)>0?Number(x.old_price_usd).toLocaleString('en-US')+'$':''};
+    });
+    D.products=[...merged,...adminOnly];
+    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
+    renderFilters();renderProducts();renderRecent();updateCategoryNav();
+  }catch(e){
+    // Keep the bundled catalog already rendered above. API failure must never blank the showroom.
+  }
+})();
 
 /* DEVA main hamburger menu — professional 4-language drawer */
 (function(){
