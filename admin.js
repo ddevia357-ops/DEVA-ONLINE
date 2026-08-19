@@ -1,4 +1,4 @@
-const DEVA_ADMIN_BUILD='D29';
+const DEVA_ADMIN_BUILD='D35';
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);let csrfToken='',me=null,loginNeeds2fa=false,sessionToken=sessionStorage.getItem('deva_admin_token')||'';
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const note=(m,ok=true)=>{const n=$('#notice');n.textContent=m;n.className=ok?'ok':'error';setTimeout(()=>n.textContent='',4000)};
