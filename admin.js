@@ -20,17 +20,16 @@ function builtinAdminProducts(){
   const src=Array.isArray(window.DEVA_DATA?.products)?window.DEVA_DATA.products:[];
   return src.map((x,i)=>({id:x.id,name:x.name,category:x.category,image:x.image||'',price_usd:moneyNumber(x.price),old_price_usd:moneyNumber(x.oldPrice),active:1,stock_qty:0,low_stock_threshold:2,product_code:String(x.code||i+1).padStart(4,'0'),catalog_origin:'BUILTIN',__fallback:true}));
 }
-function mergeAdminProducts(dbRows,deletedIds=[]){
-  const deleted=new Set((deletedIds||[]).map(String));
-  const base=builtinAdminProducts().filter(x=>!deleted.has(String(x.id))), byId=new Map(base.map(x=>[x.id,x]));
-  for(const row of Array.isArray(dbRows)?dbRows:[]){if(!deleted.has(String(row.id)))byId.set(row.id,{...byId.get(row.id),...row,__fallback:false});}
+function mergeAdminProducts(dbRows){
+  const base=builtinAdminProducts(), byId=new Map(base.map(x=>[x.id,x]));
+  for(const row of Array.isArray(dbRows)?dbRows:[]){byId.set(row.id,{...byId.get(row.id),...row,__fallback:false});}
   return [...byId.values()].sort((a,b)=>Number(a.product_code||999999)-Number(b.product_code||999999));
 }
 async function load(force=false){
   if(loadInFlight)return loadInFlight;
   if(!force&&Date.now()-lastLoadAt<5000)return;
   loadInFlight=(async()=>{
-    let [dbProducts,deletedIds,o]=await Promise.all([api('/api/admin/products'),api('/api/admin/products/tombstones'),api('/api/admin/orders')]);const p=mergeAdminProducts(dbProducts,deletedIds);$('#statProducts').textContent=p.length;$('#statOrders').textContent=o.length;$('#statPending').textContent=o.filter(x=>x.status==='PENDING').length;$('#statLowStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)>0&&Number(x.stock_qty)<=Number(x.low_stock_threshold)).length;$('#statOutStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)<=0).length;window.__adminProducts=p;renderAdminProducts(p);const pcb=$('#productCountBadge');if(pcb)pcb.textContent='('+p.length+')';$('#orders').innerHTML=o.map(x=>`<div class="row"><div><b>${esc(x.id)}</b><div class="muted">${esc(x.customer_name)} · ${esc(x.phone)} · ${esc(x.payment_status)}</div></div><span>${Number(x.total_iqd).toLocaleString()} IQD</span><select data-order="${esc(x.id)}">${['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></div>`).join('');renderDashboard(o);$('#recentOverview').innerHTML=o.slice(0,5).map(x=>`<div class="row"><b>${esc(x.id)}</b><span>${esc(x.status)}</span><span>${esc(x.created_at)}</span></div>`).join('')||'<p class="muted">هیچ داواکارییەک نییە</p>';bindRows();lastLoadAt=Date.now();
+    let [dbProducts,o]=await Promise.all([api('/api/admin/products'),api('/api/admin/orders')]);const p=mergeAdminProducts(dbProducts);$('#statProducts').textContent=p.length;$('#statOrders').textContent=o.length;$('#statPending').textContent=o.filter(x=>x.status==='PENDING').length;$('#statLowStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)>0&&Number(x.stock_qty)<=Number(x.low_stock_threshold)).length;$('#statOutStock').textContent=p.filter(x=>x.active&&Number(x.stock_qty)<=0).length;window.__adminProducts=p;renderAdminProducts(p);const pcb=$('#productCountBadge');if(pcb)pcb.textContent='('+p.length+')';$('#orders').innerHTML=o.map(x=>`<div class="row"><div><b>${esc(x.id)}</b><div class="muted">${esc(x.customer_name)} · ${esc(x.phone)} · ${esc(x.payment_status)}</div></div><span>${Number(x.total_iqd).toLocaleString()} IQD</span><select data-order="${esc(x.id)}">${['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','PAID'].map(s=>`<option ${s===x.status?'selected':''}>${s}</option>`).join('')}</select></div>`).join('');renderDashboard(o);$('#recentOverview').innerHTML=o.slice(0,5).map(x=>`<div class="row"><b>${esc(x.id)}</b><span>${esc(x.status)}</span><span>${esc(x.created_at)}</span></div>`).join('')||'<p class="muted">هیچ داواکارییەک نییە</p>';bindRows();lastLoadAt=Date.now();
   })();
   try{return await loadInFlight}finally{loadInFlight=null}
 }
