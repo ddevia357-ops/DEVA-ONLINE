@@ -39,6 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_monthly_gifts_status_dates ON monthly_gifts(statu
 CREATE INDEX IF NOT EXISTS idx_monthly_entries_gift ON monthly_gift_entries(gift_id,created_at);
 INSERT OR IGNORE INTO rewards_settings(id) VALUES(1);
 `);
+const cols=db.prepare('PRAGMA table_info(admins)').all().map(x=>x.name);
 for(const [name,sql] of [
  ['role',"ALTER TABLE admins ADD COLUMN role TEXT NOT NULL DEFAULT 'ADMIN'"],
  ['active',"ALTER TABLE admins ADD COLUMN active INTEGER NOT NULL DEFAULT 1"],
