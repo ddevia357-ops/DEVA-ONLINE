@@ -2,8 +2,8 @@ services:
   - type: web
     name: deva-furniture-online
     runtime: node
-    plan: free
-    buildCommand: npm install --omit=dev
+    plan: starter
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health
     envVars:
@@ -25,3 +25,7 @@ services:
         generateValue: true
       - key: REWARDS_QR_TOKEN
         generateValue: true
+    disk:
+      name: deva-data
+      mountPath: /var/data
+      sizeGB: 5
