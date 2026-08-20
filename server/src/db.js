@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS security_alerts(id INTEGER PRIMARY KEY AUTOINCREMENT,
 CREATE TABLE IF NOT EXISTS backups(id INTEGER PRIMARY KEY AUTOINCREMENT,file_name TEXT NOT NULL,created_by INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS role_permissions(role TEXT NOT NULL,permission TEXT NOT NULL,PRIMARY KEY(role,permission));
 CREATE TABLE IF NOT EXISTS monthly_gifts(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',gift_name TEXT NOT NULL,image TEXT,terms TEXT NOT NULL DEFAULT '',start_at TEXT NOT NULL,end_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'DRAFT',winner_entry_id INTEGER,created_by INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(created_by) REFERENCES admins(id) ON DELETE SET NULL);
-CREATE TABLE IF NOT EXISTS monthly_gift_entries(id INTEGER PRIMARY KEY AUTOINCREMENT,gift_id INTEGER NOT NULL,customer_name TEXT NOT NULL,phone TEXT NOT NULL,email TEXT,city TEXT,consent INTEGER NOT NULL DEFAULT 1,ip TEXT,user_agent TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(gift_id) REFERENCES monthly_gifts(id) ON DELETE CASCADE,UNIQUE(gift_id,phone));
+CREATE TABLE IF NOT EXISTS monthly_gift_entries(id INTEGER PRIMARY KEY AUTOINCREMENT,gift_id INTEGER NOT NULL,customer_name TEXT NOT NULL,phone TEXT NOT NULL,email
+TEXT,city TEXT,consent INTEGER NOT NULL DEFAULT 1,ip TEXT,user_agent TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(gift_id) REFERENCES monthly_gifts(id) ON DELETE CASCADE,UNIQUE(gift_id,phone));
 CREATE TABLE IF NOT EXISTS visitor_events(id INTEGER PRIMARY KEY AUTOINCREMENT,session_id TEXT NOT NULL,event_type TEXT NOT NULL,path TEXT NOT NULL DEFAULT '/',referrer TEXT,product_id TEXT,ip_hash TEXT,user_agent TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS welcome_discount_claims(phone TEXT PRIMARY KEY,order_id TEXT UNIQUE NOT NULL,status TEXT NOT NULL DEFAULT 'RESERVED',created_at TEXT DEFAULT CURRENT_TIMESTAMP,redeemed_at TEXT);
 CREATE TABLE IF NOT EXISTS rewards_settings(id INTEGER PRIMARY KEY CHECK(id=1),target_members INTEGER NOT NULL DEFAULT 1000,enabled INTEGER NOT NULL DEFAULT 1,friday_hour INTEGER NOT NULL DEFAULT 21,timezone TEXT NOT NULL DEFAULT 'Asia/Baghdad',credit_expiry_days INTEGER NOT NULL DEFAULT 30,updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
@@ -29,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_sponsor_ads_active_dates ON sponsor_ads(active,st
 CREATE INDEX IF NOT EXISTS idx_rewards_members_active ON rewards_members(active,joined_at);
 CREATE INDEX IF NOT EXISTS idx_rewards_draws_date ON rewards_draws(drawn_at);
 CREATE INDEX IF NOT EXISTS idx_rewards_draws_member ON rewards_draws(member_id,drawn_at);
-
+CREATE TABLE IF NOT EXISTS admin_reset_events(token_hash TEXT PRIMARY KEY, applied_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE INDEX IF NOT EXISTS idx_visitor_events_created ON visitor_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_visitor_events_session ON visitor_events(session_id,created_at);
 CREATE INDEX IF NOT EXISTS idx_visitor_events_type ON visitor_events(event_type,created_at);
