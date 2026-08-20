@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_visitor_events_type ON visitor_events(event_type,
 CREATE INDEX IF NOT EXISTS idx_welcome_claims_status ON welcome_discount_claims(status,created_at);
 CREATE INDEX IF NOT EXISTS idx_monthly_gifts_status_dates ON monthly_gifts(status,start_at,end_at);
 CREATE INDEX IF NOT EXISTS idx_monthly_entries_gift ON monthly_gift_entries(gift_id,created_at);
-
+db.exec(`CREATE TABLE IF NOT EXISTS product_tombstones (product_id TEXT PRIMARY KEY, deleted_at TEXT DEFAULT CURRENT_TIMESTAMP);`);
 INSERT OR IGNORE INTO rewards_settings(id) VALUES(1);
 `);
 const cols=db.prepare('PRAGMA table_info(admins)').all().map(x=>x.name);
