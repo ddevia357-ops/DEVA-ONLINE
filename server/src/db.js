@@ -38,6 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_welcome_claims_status ON welcome_discount_claims(
 CREATE INDEX IF NOT EXISTS idx_monthly_gifts_status_dates ON monthly_gifts(status,start_at,end_at);
 CREATE INDEX IF NOT EXISTS idx_monthly_entries_gift ON monthly_gift_entries(gift_id,created_at);
 INSERT OR IGNORE INTO rewards_settings(id) VALUES(1);
+CREATE TABLE IF NOT EXISTS product_tombstones(product_id TEXT PRIMARY KEY, deleted_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS app_meta(key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP);
 `);
 const cols=db.prepare('PRAGMA table_info(admins)').all().map(x=>x.name);
 for(const [name,sql] of [
