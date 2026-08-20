@@ -1,0 +1,291 @@
+const D=window.DEVA_DATA;let lang=localStorage.getItem('deva-lang')||'ku',cat='all',query='',priceRange='all',currentProduct=null;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let cart=load('deva-cart-v2',{}),wishlist=load('deva-wishlist',[]),compare=load('deva-compare',[]),recent=load('deva-recent',[]),ratings=load('deva-ratings',{});
+const extra={ku:{allPrices:'هەموو نرخەکان',wishlist:'دڵخوازەکان',compare:'بەراوردکردن',cart:'سەبەتە',addCart:'زیادکردن بۆ سەبەتە',addWish:'زیادکردن بۆ دڵخواز',addCompare:'زیادکردن بۆ بەراورد',remove:'سڕینەوە',empty:'هیچ بەرهەمێک نییە',subtotal:'کۆی گشتی',checkout:'داواکردن بە واتسئاپ',recentlyViewed:'دوا بەرهەمە بینراوەکان',rating:'هەڵسەنگاندن',related:'بەرهەمە هاوشێوەکان',added:'زیاد کرا',maxCompare:'تەنها ٣ بەرهەم دەتوانیت بەراورد بکەیت'},ar:{allPrices:'كل الأسعار',wishlist:'المفضلة',compare:'مقارنة',cart:'السلة',addCart:'أضف إلى السلة',addWish:'أضف للمفضلة',addCompare:'أضف للمقارنة',remove:'حذف',empty:'لا توجد منتجات',subtotal:'المجموع',checkout:'اطلب عبر واتساب',recentlyViewed:'شوهد مؤخراً',rating:'التقييم',related:'منتجات مشابهة',added:'تمت الإضافة',maxCompare:'يمكن مقارنة 3 منتجات فقط'},en:{allPrices:'All prices',wishlist:'Wishlist',compare:'Compare',cart:'Cart',addCart:'Add to cart',addWish:'Add to wishlist',addCompare:'Add to compare',remove:'Remove',empty:'No products',subtotal:'Subtotal',checkout:'Order on WhatsApp',recentlyViewed:'Recently viewed',rating:'Rating',related:'Related products',added:'Added',maxCompare:'You can compare up to 3 products'},tr:{allPrices:'Tüm fiyatlar',wishlist:'Favoriler',compare:'Karşılaştır',cart:'Sepet',addCart:'Sepete ekle',addWish:'Favorilere ekle',addCompare:'Karşılaştır',remove:'Sil',empty:'Ürün yok',subtotal:'Toplam',checkout:'WhatsApp ile sipariş',recentlyViewed:'Son görüntülenenler',rating:'Değerlendirme',related:'Benzer ürünler',added:'Eklendi',maxCompare:'En fazla 3 ürün karşılaştırabilirsiniz'}};
+Object.keys(extra).forEach(l=>Object.assign(D.translations[l],extra[l]));
+function t(k){return D.translations[lang][k]||k}function label(c){return D.catLabels[c]?.[lang]||c}function product(id){const wanted=String(id??'');return D.products.find(p=>String(p.id??'')===wanted)}
+function parsePrice(v){return Number(String(v||'').replace(/[^0-9.]/g,''))||0}function discountPercent(p){const old=parsePrice(p.oldPrice),now=parsePrice(p.price);return old>now&&now>0?Math.round((old-now)/old*100):0}function priceMarkup(p,modal=false){const off=discountPercent(p);if(!off)return `<span class="current-price">${p.price||t('contact')}</span>`;return `<span class="old-price">${p.oldPrice}</span><span class="current-price">${p.price}</span><span class="discount-badge">-${off}%</span>`}function cartCount(){return Object.values(cart).reduce((a,b)=>a+b,0)}
+function updateCounts(){$('#cartCount').textContent=cartCount();$('#wishCount').textContent=wishlist.length;$('#compareCount').textContent=compare.length}
+function updateBackTranslations(){
+  const labels={ku:'گەڕانەوە',ar:'العودة',en:'Back',tr:'Geri'};
+  const v=labels[lang]||labels.en;
+  $$('.universal-back').forEach(btn=>{
+    const span=btn.querySelector('span');
+    if(span)span.textContent=v;
+    btn.setAttribute('aria-label',v);
+  });
+  const dismiss=$('#installDismiss');
+  if(dismiss){const span=dismiss.querySelector('span');if(span)span.textContent=v;dismiss.setAttribute('aria-label',v)}
+}
+function setLang(l){lang=l;localStorage.setItem('deva-lang',l);document.documentElement.lang=l;document.documentElement.dir=D.translations[l].dir;$$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));$$('[data-placeholder]').forEach(e=>e.placeholder=t(e.dataset.placeholder));$('#lang').value=l;$$('.lang-chip').forEach(b=>b.classList.toggle('active',b.dataset.lang===l));if($('#langMenuBtn'))$('#langMenuBtn').firstChild.textContent=l.toUpperCase()+' ';renderCategories();renderFilters();renderProducts();renderRecent();updateCategoryNav();updateBackTranslations();if(currentProduct)openModal(currentProduct.id,false)}
+function updateCategoryNav(){const nav=$('#categoryNav');if(!nav)return;nav.hidden=cat==='all';const names={ku:'گەڕانەوە بۆ هەموو بەشەکان',ar:'العودة إلى جميع الأقسام',en:'Back to all collections',tr:'Tüm koleksiyonlara dön'};const txt=$('#categoryBackText');if(txt)txt.textContent=names[lang]||names.en}
+function selectCategory(nextCat,push=true){cat=nextCat||'all';renderFilters();renderProducts();updateCategoryNav();if(push){const hash=cat==='all'?'#products':`#category-${cat}`;history.pushState({cat},'',hash)}$('#products').scrollIntoView({behavior:'smooth',block:'start'})}
+function renderCategories(){const order=['sofa','bedroom','corner','tv','console','dining','coffee','door','clock','decor'];$('#categoryGrid').innerHTML=order.map(c=>`<article class="category-card" data-cat="${c}"><img loading="lazy" decoding="async" src="${D.covers[c]||''}"><div class="label"><small>DEVA COLLECTION</small><h3>${label(c)}</h3></div></article>`).join('');$$('.category-card').forEach(x=>x.onclick=()=>selectCategory(x.dataset.cat))}
+function renderFilters(){const cats=[...new Set(D.products.map(p=>p.category))];$('#filterButtons').innerHTML=cats.map(c=>`<button class="filter ${cat===c?'active':''}" data-cat="${c}">${label(c)}</button>`).join('');$$('.filter').forEach(b=>b.onclick=()=>selectCategory(b.dataset.cat));const all=document.querySelector('[data-cat="all"]');if(all){all.classList.toggle('active',cat==='all');all.onclick=()=>selectCategory('all')}}
+function matchPrice(p){const n=parsePrice(p.price);if(priceRange==='all')return true;if(!n)return false;if(priceRange==='under1000')return n<1000;if(priceRange==='1000-1499')return n>=1000&&n<1500;return n>=1500}
+function productCode(p){return String(p?.code||p?.product_code||'').padStart(4,'0')}
+function card(p){return `<article class="product-card" data-id="${p.id}"><div class="product-image"><span class="product-code-badge">${productCode(p)}</span><img loading="lazy" decoding="async" src="${p.image}" alt="${p.name}"><div class="product-tools"><button class="wish-toggle ${wishlist.includes(p.id)?'active':''}" data-id="${p.id}" data-wish="${p.id}" title="${t('wishlist')}">♡</button><button class="compare-toggle ${compare.includes(p.id)?'active':''}" data-id="${p.id}" data-compare="${p.id}" title="${t('compare')}">⚖</button></div></div><div class="product-info"><small>${label(p.category)}</small><h3>${p.name}</h3><div class="product-price">${priceMarkup(p)}</div><button class="view-btn" data-id="${p.id}">${t('details')}</button></div></article>`}
+function bindCards(root=document){root.querySelectorAll('.view-btn').forEach(b=>b.onclick=()=>openModal(b.dataset.id));root.querySelectorAll('.wish-toggle').forEach(b=>b.onclick=()=>toggleWish(b.dataset.id));root.querySelectorAll('.compare-toggle').forEach(b=>b.onclick=()=>toggleCompare(b.dataset.id))}
+function matchesSearch(p){const rawQ=String(query||'').trim().toLowerCase();if(!rawQ)return true;const clean=v=>String(v||'').toLowerCase().normalize('NFKC').replace(/[^a-z0-9\u0600-\u06ff]+/g,' ').trim();const compact=v=>clean(v).replace(/\s+/g,'');const name=clean(p?.name);const rawCode=String(p?.code||p?.product_code||'').trim().toLowerCase();const paddedCode=productCode(p).toLowerCase();const q=clean(rawQ).replace(/^code\s*/,'').trim();const qCompact=compact(q);const nameCompact=compact(name);const codeCompact=compact(rawCode);const paddedCompact=compact(paddedCode);const qNum=qCompact.replace(/^0+/,'');const codeNum=codeCompact.replace(/^0+/,'');const paddedNum=paddedCompact.replace(/^0+/,'');return name.includes(q)||nameCompact.includes(qCompact)||codeCompact.includes(qCompact)||paddedCompact.includes(qCompact)||(qNum&&(codeNum.includes(qNum)||paddedNum.includes(qNum)))}function renderProducts(){let ps=D.products.filter(p=>(cat==='all'||p.category===cat)&&matchesSearch(p)&&matchPrice(p));$('#productGrid').innerHTML=ps.length?ps.map(card).join(''):`<div class="empty">${t('empty')}</div>`;bindCards($('#productGrid'))}
+function relatedImages(p){return [p.image,...D.products.filter(x=>x.category===p.category&&x.id!==p.id).slice(0,3).map(x=>x.image)]}
+function openModal(id,track=true){const p=product(id);if(!p)return;currentProduct=p;if(track){recent=[id,...recent.filter(x=>x!==id)].slice(0,8);save('deva-recent',recent);renderRecent()}const imgs=(p.images&&p.images.length?p.images:relatedImages(p));$('#modalImg').src=imgs[0];$('#thumbs').innerHTML=imgs.map((x,i)=>`<img loading="lazy" decoding="async" class="${i===0?'active':''}" src="${x}">`).join('');$$('#thumbs img').forEach((x,i)=>x.onclick=()=>{$('#modalImg').src=x.src;$$('#thumbs img').forEach(y=>y.classList.remove('active'));x.classList.add('active')});$('#modalCat').textContent=label(p.category);$('#modalName').textContent=p.name;const modalCode=$('#modalCode');if(modalCode)modalCode.textContent='CODE '+productCode(p);$('#modalPrice').innerHTML=p.price?priceMarkup(p,true):t('contact');$('#modalDesc').textContent=t('tagline');$('#addCart').textContent=t('addCart');$('#addWish').textContent=t('addWish');$('#addCompare').textContent=t('addCompare');$('#modalWa').href=`https://wa.me/9647509412626?text=${encodeURIComponent('DEVA FURNITURE\nCODE: '+productCode(p)+'\nPRODUCT: '+p.name)}`;$('#relatedGrid').innerHTML=D.products.filter(x=>x.category===p.category&&x.id!==p.id).slice(0,3).map(x=>`<div class="related-card" data-id="${x.id}"><img loading="lazy" decoding="async" src="${x.image}"><span>${x.name}</span></div>`).join('');$$('.related-card').forEach(x=>x.onclick=()=>openModal(x.dataset.id));renderStars();$('#modal').classList.add('open')}
+function toggleWish(id){wishlist=wishlist.includes(id)?wishlist.filter(x=>x!==id):[...wishlist,id];save('deva-wishlist',wishlist);updateCounts();renderProducts();renderRecent();toast(t('added'))}
+function toggleCompare(id){if(compare.includes(id))compare=compare.filter(x=>x!==id);else{if(compare.length>=3)return toast(t('maxCompare'));compare.push(id)}save('deva-compare',compare);updateCounts();renderProducts();renderRecent();toast(t('added'))}
+function addToCart(id,qty=1){cart[id]=(cart[id]||0)+qty;save('deva-cart-v2',cart);updateCounts();toast(t('added'))}
+function renderRecent(){const ps=recent.map(product).filter(Boolean);$('#recentSection').classList.toggle('visible',ps.length>0);$('#recentGrid').innerHTML=ps.map(card).join('');bindCards($('#recentGrid'))}
+function openDrawer(type){$('#drawerTitle').textContent=t(type);let ids=type==='cart'?Object.keys(cart):wishlist;let ps=ids.map(product).filter(Boolean);$('#drawerBody').innerHTML=ps.length?ps.map(p=>`<div class="drawer-item"><img loading="lazy" decoding="async" src="${p.image}"><div><h4>${p.name}</h4><small>${p.price||t('contact')}</small>${type==='cart'?`<div class="qty"><button data-act="minus" data-id="${p.id}">−</button><b>${cart[p.id]}</b><button data-act="plus" data-id="${p.id}">+</button></div>`:''}</div><button data-remove="${p.id}">×</button></div>`).join(''):`<div class="empty">${t('empty')}</div>`;$('#drawerFooter').innerHTML=type==='cart'&&ps.length?`<div class="subtotal"><span>${t('subtotal')}</span><b>${Object.entries(cart).reduce((s,[id,q])=>s+parsePrice(product(id)?.price)*q,0).toLocaleString()}$</b></div><button id="checkout" class="checkout-btn">${t('checkout')}</button>`:'';$$('[data-remove]').forEach(b=>b.onclick=()=>{if(type==='cart')delete cart[b.dataset.remove];else wishlist=wishlist.filter(x=>x!==b.dataset.remove);save('deva-cart-v2',cart);save('deva-wishlist',wishlist);updateCounts();openDrawer(type);renderProducts();renderRecent()});$$('[data-act]').forEach(b=>b.onclick=()=>{const id=b.dataset.id;cart[id]+=b.dataset.act==='plus'?1:-1;if(cart[id]<=0)delete cart[id];save('deva-cart-v2',cart);updateCounts();openDrawer(type)});if($('#checkout'))$('#checkout').onclick=()=>{const lines=Object.entries(cart).map(([id,q])=>{const p=product(id);return `${q}x [${productCode(p)}] ${p?.name||''}`}).join('\n');window.open(`https://wa.me/9647509412626?text=${encodeURIComponent('DEVA ORDER\n'+lines)}`,'_blank')};$('#drawer').classList.add('open');$('#drawerBackdrop').classList.add('open')}
+function openCompare(){const ps=compare.map(product).filter(Boolean);$('#compareBody').innerHTML=ps.length?ps.map(p=>`<article class="compare-card"><img loading="lazy" decoding="async" src="${p.image}"><h3>${p.name}</h3><table><tr><td>${t('price')}</td><td>${p.price||t('contact')}</td></tr><tr><td>${t('collections')}</td><td>${label(p.category)}</td></tr><tr><td>${t('rating')}</td><td>${ratings[p.id]||'—'} / 5</td></tr></table><button class="view-btn" data-id="${p.id}">${t('details')}</button></article>`).join(''):`<div class="empty">${t('empty')}</div>`;bindCards($('#compareBody'));$('#comparePanel').classList.add('open')}
+function renderStars(){const n=ratings[currentProduct?.id]||0;$$('#stars button').forEach(b=>b.classList.toggle('on',Number(b.dataset.star)<=n))}
+function toast(msg){$('#toast').textContent=msg;$('#toast').classList.add('show');clearTimeout(window._toast);window._toast=setTimeout(()=>$('#toast').classList.remove('show'),1700)}
+$('#closeModal').onclick=()=>$('#modal').classList.remove('open');$('#modal').onclick=e=>{if(e.target===$('#modal'))$('#modal').classList.remove('open')};$('#addCart').onclick=()=>currentProduct&&addToCart(currentProduct.id);$('#addWish').onclick=()=>currentProduct&&toggleWish(currentProduct.id);$('#addCompare').onclick=()=>currentProduct&&toggleCompare(currentProduct.id);$$('#stars button').forEach(b=>b.onclick=()=>{if(!currentProduct)return;ratings[currentProduct.id]=Number(b.dataset.star);save('deva-ratings',ratings);renderStars()});$('#search').addEventListener('input',e=>{query=e.target.value;renderProducts()});$('#priceFilter').onchange=e=>{priceRange=e.target.value;renderProducts()};$('#lang').onchange=e=>setLang(e.target.value);const langMenuBtn=$('#langMenuBtn'),langMenu=$('#langMenu');if(langMenuBtn&&langMenu){langMenuBtn.onclick=e=>{e.stopPropagation();const open=langMenu.hasAttribute('hidden');if(open){langMenu.removeAttribute('hidden');langMenuBtn.setAttribute('aria-expanded','true')}else{langMenu.setAttribute('hidden','');langMenuBtn.setAttribute('aria-expanded','false')}};document.addEventListener('click',e=>{if(!e.target.closest('.lang-switcher')){langMenu.setAttribute('hidden','');langMenuBtn.setAttribute('aria-expanded','false')}})}$$('.lang-chip').forEach(b=>b.onclick=()=>{setLang(b.dataset.lang);if(langMenu){langMenu.setAttribute('hidden','');langMenuBtn.setAttribute('aria-expanded','false')}});$('#cartBtn').onclick=()=>openDrawer('cart');$('#wishlistBtn').onclick=()=>openDrawer('wishlist');$('#compareBtn').onclick=openCompare;$('#closeDrawer').onclick=()=>{$('#drawer').classList.remove('open');$('#drawerBackdrop').classList.remove('open')};$('#drawerBackdrop').onclick=$('#closeDrawer').onclick;$('#closeCompare').onclick=()=>$('#comparePanel').classList.remove('open');$('#searchBtn').onclick=()=>{$('#products').scrollIntoView();setTimeout(()=>$('#search').focus(),300)};if($('#categoryBackBtn'))$('#categoryBackBtn').onclick=()=>selectCategory('all');window.addEventListener('popstate',e=>{const stateCat=e.state?.cat;const hashCat=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):null;cat=stateCat||hashCat||'all';renderFilters();renderProducts();updateCategoryNav()});window.addEventListener('load',()=>setTimeout(()=>$('#loader').classList.add('hide'),1200));const initialHashCat=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):null;if(initialHashCat&&D.products.some(p=>p.category===initialHashCat))cat=initialHashCat;updateCounts();setLang(lang);updateCategoryNav();
+
+// Phase 3 — local functional preview (no remote backend)
+const p3extra={
+ ku:{accountTitle:'هەژماری کریار',saveProfile:'هەڵگرتنی هەژمار',memberText:'هەژماری خۆت دروست بکە بۆ هەڵگرتنی دڵخوازەکان و داواکارییەکان.',trackTitle:'شوێنکەوتنی داواکاری',trackButton:'گەڕان',dashboardTitle:'داشبۆردی بەڕێوەبردن',demoNote:'ئەمە نموونەی کاراکەری ناوخۆییە؛ بۆ کارکردنی ئۆنلاین پێویستی بە Backend هەیە.',couponManager:'بەڕێوەبردنی کۆپن',ordersTitle:'داواکارییەکان',coupon:'کۆدی داشکاندن',apply:'جێبەجێکردن',discount:'داشکاندن',deliveryFee:'گواستنەوە',total:'کۆی کۆتایی',profileSaved:'هەژمارەکە هەڵگیرا',orderCreated:'داواکاری دروست کرا',notFound:'داواکاری نەدۆزرایەوە'},
+ ar:{accountTitle:'حساب العميل',saveProfile:'حفظ الحساب',memberText:'أنشئ حسابك لحفظ المفضلة والطلبات.',trackTitle:'تتبع الطلب',trackButton:'بحث',dashboardTitle:'لوحة الإدارة',demoNote:'هذه معاينة محلية تفاعلية؛ التشغيل الفعلي عبر الإنترنت يحتاج إلى Backend.',couponManager:'إدارة القسائم',ordersTitle:'الطلبات',coupon:'كود الخصم',apply:'تطبيق',discount:'الخصم',deliveryFee:'التوصيل',total:'الإجمالي النهائي',profileSaved:'تم حفظ الحساب',orderCreated:'تم إنشاء الطلب',notFound:'لم يتم العثور على الطلب'},
+ en:{accountTitle:'Customer Account',saveProfile:'Save profile',memberText:'Create your account to keep favorites and order history.',trackTitle:'Order Tracking',trackButton:'Track',dashboardTitle:'Management Dashboard',demoNote:'This is a functional local preview; real online operation requires a backend.',couponManager:'Coupon Management',ordersTitle:'Orders',coupon:'Coupon code',apply:'Apply',discount:'Discount',deliveryFee:'Delivery',total:'Final total',profileSaved:'Profile saved',orderCreated:'Order created',notFound:'Order not found'},
+ tr:{accountTitle:'Müşteri Hesabı',saveProfile:'Profili kaydet',memberText:'Favorileri ve sipariş geçmişini saklamak için hesabınızı oluşturun.',trackTitle:'Sipariş Takibi',trackButton:'Takip et',dashboardTitle:'Yönetim Paneli',demoNote:'Bu çalışan yerel bir önizlemedir; gerçek çevrimiçi kullanım için backend gerekir.',couponManager:'Kupon Yönetimi',ordersTitle:'Siparişler',coupon:'Kupon kodu',apply:'Uygula',discount:'İndirim',deliveryFee:'Teslimat',total:'Genel toplam',profileSaved:'Profil kaydedildi',orderCreated:'Sipariş oluşturuldu',notFound:'Sipariş bulunamadı'}
+};Object.keys(p3extra).forEach(l=>Object.assign(D.translations[l],p3extra[l]));
+let customer=load('deva-customer',null),orders=load('deva-orders',[]),activeCoupon=load('deva-coupon',null);
+const coupons={WELCOME10:{type:'percent',value:10,min:0},SAVE50:{type:'fixed',value:50,min:500},FREEDELIVERY:{type:'delivery',value:0,min:0},VIP15:{type:'percent',value:15,min:1500}};
+function modalOpen(id){$('#'+id).classList.add('open')}function modalClose(id){$('#'+id).classList.remove('open')}
+function renderAccount(){const s=$('#accountState');s.innerHTML=customer?`<div class="profile-card"><b>${customer.name}</b><span>${customer.phone}</span><span>${customer.email||''}</span><span>DEVA VIP MEMBER</span></div>`:'';if(customer){$('#customerName').value=customer.name||'';$('#customerPhone').value=customer.phone||'';$('#customerEmail').value=customer.email||''}}
+function cartBase(){return Object.entries(cart).reduce((sum,[id,q])=>sum+parsePrice(product(id)?.price)*q,0)}
+function discountValue(base){if(!activeCoupon||!coupons[activeCoupon])return 0;const c=coupons[activeCoupon];if(base<c.min)return 0;if(c.type==='percent')return base*c.value/100;if(c.type==='fixed')return Math.min(base,c.value);return 0}
+function deliveryValue(base){if(activeCoupon==='FREEDELIVERY'||base>=1000)return 0;return base>0?25:0}
+function applyCoupon(code){code=String(code||'').trim().toUpperCase();const c=coupons[code],base=cartBase();if(!c||base<c.min){activeCoupon=null;save('deva-coupon',null);return false}activeCoupon=code;save('deva-coupon',code);return true}
+function welcome20Eligible(){return localStorage.getItem('deva-welcome20-unlocked')==='1'&&localStorage.getItem('deva-welcome20-used')!=='1'&&orders.length===0}
+const phase2OpenDrawer=openDrawer;openDrawer=function(type){phase2OpenDrawer(type);if(type!=='cart'||!Object.keys(cart).length)return;const base=cartBase(),welcome=welcome20Eligible(),couponDiscount=welcome?0:discountValue(base),welcomeDiscount=welcome?Math.round(base*20)/100:0,discount=welcomeDiscount||couponDiscount,delivery=welcome?(base>=1000?0:(base>0?25:0)):deliveryValue(base),total=Math.max(0,Math.round((base-discount+delivery)*100)/100);$('#drawerFooter').innerHTML=`${welcome?`<div class="welcome-cart-gift"><b>🎁 DEVA APP GIFT — 20%</b><span>داشکاندنی یەکەم داواکاری بە ئۆتۆماتیکی جێبەجێ کرا</span></div>`:''}<div class="coupon-box ${welcome?'coupon-disabled':''}"><input id="couponInput" placeholder="${t('coupon')}" value="${welcome?'WELCOME20':(activeCoupon||'')}" ${welcome?'disabled':''}><button id="applyCoupon" ${welcome?'disabled':''}>${t('apply')}</button></div><div id="couponMessage">${welcome?'WELCOME20 • تەنها یەک جار':''}</div><div class="subtotal"><span>${t('subtotal')}</span><b>${base.toLocaleString()}$</b></div><div class="discount-row"><span>${welcome?'دیاریی ئەپ 20%':t('discount')}</span><b>−${discount.toLocaleString()}$</b></div><div class="delivery-row"><span>${t('deliveryFee')}</span><b>${delivery.toLocaleString()}$</b></div><div class="grand-total"><span>${t('total')}</span><b>${total.toLocaleString()}$</b></div><button id="checkout" class="checkout-btn">${t('checkout')}</button>`;if(!welcome)$('#applyCoupon').onclick=()=>{const ok=applyCoupon($('#couponInput').value);$('#couponMessage').className=ok?'coupon-success':'coupon-error';$('#couponMessage').textContent=ok?'✓ '+$('#couponInput').value.toUpperCase():'Coupon not valid';openDrawer('cart')};$('#checkout').onclick=()=>createOrder(total,{welcome,base,discount})};
+function createOrder(total,meta={}){if(!customer){modalClose('drawer');modalOpen('accountModal');toast(t('accountTitle'));return}const code='DEVA-'+String(Date.now()).slice(-6);const isWelcome=!!meta.welcome&&welcome20Eligible();const o={code,date:new Date().toLocaleString(),status:1,total,subtotal:Number(meta.base||total),discount:Number(meta.discount||0),discountCode:isWelcome?'WELCOME20':(activeCoupon||null),customer:{...customer},items:Object.entries(cart).map(([id,q])=>{const p=product(id);return {id,q,name:p?.name,code:productCode(p)}})};orders.unshift(o);save('deva-orders',orders);if(isWelcome){localStorage.setItem('deva-welcome20-used','1');localStorage.setItem('deva-welcome20-used-order',code)}const lines=o.items.map(x=>`${x.q}x [${x.code||''}] ${x.name}`).join('\n');const giftLine=isWelcome?`\n🎁 DEVA APP FIRST ORDER GIFT: 20% (-${o.discount}$)`:'';window.open(`https://wa.me/9647509412626?text=${encodeURIComponent(`DEVA ORDER ${code}\nCustomer: ${customer.name}\nPhone: ${customer.phone}\n${lines}${giftLine}\nTotal: ${total}$`)}`,'_blank');cart={};save('deva-cart-v2',cart);updateCounts();$('#closeDrawer').click();toast(isWelcome?'🎁 20% داشکاندنی یەکەم داواکاری جێبەجێ کرا':`${t('orderCreated')}: ${code}`);renderDashboard()}
+function trackOrder(code){const o=orders.find(x=>x.code.toUpperCase()===String(code).trim().toUpperCase());if(!o){$('#trackingResult').innerHTML=`<div class="tracking-card coupon-error">${t('notFound')}</div>`;return}const steps=['Received','Confirmed','Preparing','Delivered'];$('#trackingResult').innerHTML=`<div class="tracking-card"><div class="tracking-code">${o.code}</div><p>${o.date} · ${o.total}$</p><div class="track-steps">${steps.map((x,i)=>`<div class="track-step ${i<=o.status?'done':''}">${x}</div>`).join('')}</div></div>`}
+function renderTracking(){if(!orders.length){$('#orderHistory').innerHTML='';return}$('#orderHistory').innerHTML=`<h3>${t('ordersTitle')}</h3>`+orders.slice(0,6).map(o=>`<div class="order-row"><button class="link-order" data-code="${o.code}">${o.code}</button><span>${o.total}$</span></div>`).join('');$$('.link-order').forEach(b=>b.onclick=()=>{$('#trackingCode').value=b.dataset.code;trackOrder(b.dataset.code)})}
+function renderDashboard(){if(!$('#dashboardStats'))return;const valued=D.products.filter(p=>parsePrice(p.price)>0);$('#dashboardStats').innerHTML=[['Products',D.products.length],['Priced',valued.length],['Orders',orders.length],['Coupons',Object.keys(coupons).length]].map(x=>`<div class="stat-card"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');$('#couponList').innerHTML=Object.entries(coupons).map(([code,c])=>`<div class="coupon-admin"><div><b>${code}</b><small> · ${c.type==='percent'?c.value+'%':c.type==='fixed'?c.value+'$':'Free delivery'}</small></div><span class="phase-badge">ACTIVE</span></div>`).join('');$('#adminOrders').innerHTML=orders.length?orders.slice(0,8).map(o=>`<div class="admin-order"><div><b>${o.code}</b><small> · ${o.date}</small></div><span>${o.total}$</span></div>`).join(''):`<div class="empty">${t('empty')}</div>`}
+$('#accountBtn').onclick=()=>{renderAccount();modalOpen('accountModal')};$('#trackBtn').onclick=()=>{renderTracking();modalOpen('trackingModal')};$('#adminBtn').onclick=()=>{renderDashboard();modalOpen('adminModal')};$$('[data-close]').forEach(b=>b.onclick=()=>modalClose(b.dataset.close));$('#accountForm').onsubmit=async e=>{e.preventDefault();customer={name:$('#customerName').value.trim(),phone:$('#customerPhone').value.trim(),email:$('#customerEmail').value.trim()};save('deva-customer',customer);renderAccount();toast(t('profileSaved'));if(window.DEVA_REWARDS?.handleProfileSaved){const joined=await window.DEVA_REWARDS.handleProfileSaved(customer);if(joined)toast('🎁 DEVA Rewards ـت چالاک کرا')}};$('#trackingForm').onsubmit=e=>{e.preventDefault();trackOrder($('#trackingCode').value)};
+const phase3SetLang=setLang;setLang=function(l){phase3SetLang(l);renderAccount();renderTracking();renderDashboard()};setLang(lang);
+
+// Phase 4 — local smart features, room preview, assistant, PWA and analytics
+const p4extra={
+ ku:{smartForYou:'پێشنیاری زیرەکانە بۆ تۆ',completeRoom:'ژوورەکەت تەواو بکە',aiTitle:'گەڕانی زیرەکانە',aiHelp:'بە زمانی ئاسایی بنووسە، بۆ نموونە: قەنەفەی L لەژێر 1500 دۆلار.',searchNow:'گەڕان',roomTitle:'تاقیکردنەوە لە ژوورەکەت',roomHelp:'وێنەی ژوورەکەت هەڵبژێرە و بەرهەمێک لەسەر وێنەکە تاقی بکەرەوە. ئەمە Preview ـە، نە AR ـی 3D.',uploadRoom:'وێنەی ژوور Upload بکە',chatWelcome:'سڵاو، چۆن یارمەتیت بدەم؟',installText:'DEVA وەک ئەپ دابمەزرێنە',install:'دامەزراندن'},
+ ar:{smartForYou:'اقتراحات ذكية لك',completeRoom:'أكمل غرفتك',aiTitle:'البحث الذكي',aiHelp:'اكتب بطريقتك، مثلاً: ركنة أقل من 1500 دولار.',searchNow:'بحث',roomTitle:'معاينة داخل غرفتك',roomHelp:'اختر صورة غرفتك وجرب المنتج فوقها. هذه معاينة وليست AR ثلاثية الأبعاد.',uploadRoom:'ارفع صورة الغرفة',chatWelcome:'مرحباً، كيف أستطيع مساعدتك؟',installText:'ثبّت DEVA كتطبيق',install:'تثبيت'},
+ en:{smartForYou:'Smart picks for you',completeRoom:'Complete the room',aiTitle:'Smart Search',aiHelp:'Use natural language, for example: corner sofa under 1500 dollars.',searchNow:'Search',roomTitle:'Preview in your room',roomHelp:'Upload a room photo and place a product over it. This is a preview, not true 3D AR.',uploadRoom:'Upload a room photo',chatWelcome:'Hello, how can I help?',installText:'Install DEVA as an app',install:'Install'},
+ tr:{smartForYou:'Size özel akıllı öneriler',completeRoom:'Odayı tamamla',aiTitle:'Akıllı Arama',aiHelp:'Doğal şekilde yazın, örneğin: 1500 dolar altı köşe koltuk.',searchNow:'Ara',roomTitle:'Odanızda önizleyin',roomHelp:'Oda fotoğrafı yükleyip ürünü üzerinde deneyin. Bu bir önizlemedir, gerçek 3D AR değildir.',uploadRoom:'Oda fotoğrafı yükleyin',chatWelcome:'Merhaba, nasıl yardımcı olabilirim?',installText:'DEVA uygulamasını yükle',install:'Yükle'}
+};Object.keys(p4extra).forEach(l=>Object.assign(D.translations[l],p4extra[l]));
+let analytics=load('deva-analytics',{views:0,searches:0,aiSearches:0,wishes:0,orders:0});analytics.views++;save('deva-analytics',analytics);
+function preferredCategories(){const ids=[...recent,...wishlist,...Object.keys(cart)];const count={};ids.forEach(id=>{const p=product(id);if(p)count[p.category]=(count[p.category]||0)+1});return Object.entries(count).sort((a,b)=>b[1]-a[1]).map(x=>x[0])}
+function renderSmart(){const cats=preferredCategories(),pool=[...D.products].filter(p=>parsePrice(p.price)>0);pool.sort((a,b)=>(cats.indexOf(a.category)<0?99:cats.indexOf(a.category))-(cats.indexOf(b.category)<0?99:cats.indexOf(b.category)));const picks=pool.slice(0,8);$('#smartGrid').innerHTML=picks.map(card).join('');bindCardsEnhanced('#smartGrid')}
+function bindCardsEnhanced(scope=document){const root=typeof scope==='string'?document.querySelector(scope):scope;if(!root)return;root.querySelectorAll('.view-btn').forEach(b=>b.onclick=e=>{e.stopPropagation();openModal(b.dataset.id)});root.querySelectorAll('.product-card').forEach(el=>{el.onclick=null});root.querySelectorAll('.wish-toggle,[data-wish]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.id||b.dataset.wish;toggleWish(id);if(typeof analytics!=='undefined'){analytics.wishes++;save('deva-analytics',analytics)}if(typeof renderSmart==='function')renderSmart()});root.querySelectorAll('.compare-toggle,[data-compare]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleCompare(b.dataset.id||b.dataset.compare)})}
+function renderBundles(){const groups=[['corner','coffee','decor'],['sofa','coffee','tv'],['bedroom','console','decor']];$('#bundleGrid').innerHTML=groups.map((g,i)=>{const ps=g.map(c=>D.products.find(p=>p.category===c&&parsePrice(p.price)>0)||D.products.find(p=>p.category===c)).filter(Boolean);return `<article class="bundle-card"><div class="bundle-images">${ps.map(p=>`<img loading="lazy" decoding="async" src="${p.image}" alt="${p.name}">`).join('')}</div><div class="bundle-info"><h3>${['Modern Living','Elegant Lounge','Luxury Bedroom'][i]}</h3><p>${ps.map(p=>p.name).join(' · ')}</p><button class="gold-btn bundle-add" data-ids="${ps.map(p=>p.id).join(',')}">${t('addCart')}</button></div></article>`}).join('');$$('.bundle-add').forEach(b=>b.onclick=()=>{b.dataset.ids.split(',').forEach(id=>{cart[id]=(cart[id]||0)+1});save('deva-cart-v2',cart);updateCounts();toast(t('added'))})}
+function aiTokens(q){return String(q).toLowerCase().replace(/[.,]/g,' ').split(/\s+/).filter(Boolean)}
+function smartSearch(q){analytics.aiSearches++;save('deva-analytics',analytics);const toks=aiTokens(q);let max=Infinity,min=0;const nums=(q.match(/\d+/g)||[]).map(Number);if(/under|below|less|ژێر|اقل|altı/i.test(q)&&nums.length)max=Math.max(...nums);if(/over|above|more|سەر|اكثر|üstü/i.test(q)&&nums.length)min=Math.min(...nums);const cmap={corner:['corner','l','کۆرنەر','قەنەفەی','ركنة','köşe'],sofa:['sofa','قەنەفە','كنبة','koltuk'],bedroom:['bedroom','نوستن','نوم','yatak'],tv:['tv','تەلەڤیزیۆن','تلفزيون','televizyon'],dining:['dining','نانخواردن','طاولة','yemek'],coffee:['coffee','ناوەڕاست','sehpa'],door:['door','دەرگا','باب','kapı']};let wanted=null;Object.entries(cmap).forEach(([c,words])=>{if(words.some(w=>toks.includes(w.toLowerCase())||String(q).toLowerCase().includes(w.toLowerCase())))wanted=c});return D.products.filter(p=>{const price=parsePrice(p.price);const text=(p.name+' '+p.category).toLowerCase();return (!wanted||p.category===wanted)&&(!price||(price>=min&&price<=max))&&(!toks.length||toks.some(x=>text.includes(x))||wanted)}).slice(0,12)}
+function renderAI(results){$('#aiResults').innerHTML=results.length?results.map(card).join(''):`<div class="empty">${t('empty')}</div>`;bindCardsEnhanced('#aiResults')}
+$('#aiBtn').onclick=()=>{modalOpen('aiModal');renderAI(D.products.filter(p=>parsePrice(p.price)>0).slice(0,6))};$('#aiForm').onsubmit=e=>{e.preventDefault();renderAI(smartSearch($('#aiQuery').value))};const chips=['Corner under 1500','Bedroom 1700','Coffee table','TV unit'];$('#aiChips').innerHTML=chips.map(x=>`<button>${x}</button>`).join('');$$('#aiChips button').forEach(b=>b.onclick=()=>{$('#aiQuery').value=b.textContent;renderAI(smartSearch(b.textContent))});
+function fillRoomProducts(){const priced=D.products.filter(p=>['sofa','corner','bedroom','tv','console','coffee'].includes(p.category));$('#roomProduct').innerHTML=priced.slice(0,100).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');updateRoomFurniture()}
+function updateRoomFurniture(){const p=product($('#roomProduct').value);if(!p)return;$('#roomFurniture').src=p.image;$('#roomFurniture').style.display='block'}
+$('#roomBtn').onclick=()=>{modalOpen('roomModal');fillRoomProducts()};$('#roomProduct').onchange=updateRoomFurniture;$('#roomUpload').onchange=e=>{const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f);$('#roomBg').src=u;$('#roomBg').style.display='block';$('.room-empty').style.display='none';updateRoomFurniture()};$('#roomSize').oninput=e=>$('#roomFurniture').style.width=e.target.value+'%';$('#roomReset').onclick=()=>{const f=$('#roomFurniture');f.style.left='50%';f.style.top='55%';f.style.width='48%'};
+(()=>{const f=$('#roomFurniture'),stage=$('#roomStage');let drag=false,ox=0,oy=0;const start=e=>{drag=true;const r=f.getBoundingClientRect();const pt=e.touches?e.touches[0]:e;ox=pt.clientX-r.left-r.width/2;oy=pt.clientY-r.top-r.height/2;e.preventDefault()};const move=e=>{if(!drag)return;const sr=stage.getBoundingClientRect(),pt=e.touches?e.touches[0]:e;f.style.left=((pt.clientX-sr.left-ox)/sr.width*100)+'%';f.style.top=((pt.clientY-sr.top-oy)/sr.height*100)+'%'};f.addEventListener('mousedown',start);f.addEventListener('touchstart',start,{passive:false});window.addEventListener('mousemove',move);window.addEventListener('touchmove',move,{passive:false});window.addEventListener('mouseup',()=>drag=false);window.addEventListener('touchend',()=>drag=false)})();
+const answers={delivery:'گەیاندن و دامەزراندن لە ناو هەولێر بەردەستە. بۆ وردەکاریی ناونیشان و کاتی گەیاندن لەگەڵ تیمی DEVA پەیوەندی بکە.',hours:'کاتی کارکردنی DEVA: ڕۆژانە 10 بەیانی تا 12 شەو.',location:'پێشانگای DEVA Furniture لە هەولێرە.'};function chatReply(q){q=q.toLowerCase();if(/deliver|delivery|گەیاندن|گواستن|توصيل|teslim/.test(q))return answers.delivery;if(/hour|hours|opening|کات|دوام|ساعات|saat/.test(q))return answers.hours;if(/location|شوێن|عنوان|konum/.test(q))return answers.location;return 'بۆ یارمەتی زیاتر لەگەڵ تیمی DEVA پەیوەندی بکە: 0750 941 2626'}
+const chatQuickLabels={ku:['🚚 گەیاندن','🕒 کاتی کارکردن'],ar:['🚚 التوصيل','🕒 أوقات الدوام'],en:['🚚 Delivery','🕒 Opening Hours'],tr:['🚚 Teslimat','🕒 Çalışma Saatleri']};function bindChatQuick(){const box=$('#chatQuick');if(!box)return;box.innerHTML=(chatQuickLabels[lang]||chatQuickLabels.en).map(x=>`<button type="button">${x}</button>`).join('');$$('#chatQuick button').forEach(b=>b.onclick=()=>{pushChat(b.textContent,'user-msg');setTimeout(()=>pushChat(chatReply(b.textContent),'bot-msg'),250)})}$('#chatToggle').onclick=()=>{$('#chatPanel').classList.add('open');setTimeout(()=>$('#chatInput')?.focus(),180)};$('#chatClose').onclick=()=>$('#chatPanel').classList.remove('open');function pushChat(text,cls){const d=document.createElement('div');d.className=cls;d.textContent=text;$('#chatMessages').appendChild(d);$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight}$('#chatForm').onsubmit=e=>{e.preventDefault();const q=$('#chatInput').value.trim();if(!q)return;pushChat(q,'user-msg');$('#chatInput').value='';setTimeout(()=>pushChat(chatReply(q),'bot-msg'),350)};bindChatQuick();window.addEventListener('deva-language-change',bindChatQuick);
+let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installBar').classList.add('show')});$('#installBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('#installBar').classList.remove('show')};$('#installDismiss').onclick=()=>$('#installBar').classList.remove('show');if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+const oldRenderDashboard=renderDashboard;renderDashboard=function(){oldRenderDashboard();if(!$('#dashboardStats'))return;$('#dashboardStats').insertAdjacentHTML('beforeend',`<div class="stat-card"><small>Page views</small><strong>${analytics.views}</strong><div class="analytics-mini">AI searches: ${analytics.aiSearches}</div></div>`)};
+const oldSetLang4=setLang;setLang=function(l){oldSetLang4(l);renderSmart();renderBundles()};renderSmart();renderBundles();setLang(lang);
+
+
+// Phase 5 — VIP loyalty, birthday coupons, launch center, sharing and data exports
+const p5extra={
+ ku:{clubTitle:'DEVA VIP Club',clubText:'خاڵ کۆبکەرەوە، ئۆفەری تایبەت بکەرەوە و دیاریی لەدایکبوون وەربگرە.',joinClub:'ببە بە ئەندام',shareSite:'DEVA هاوبەش بکە',languagesLabel:'زمان',categoriesLabel:'کۆمەڵە',digitalLabel:'شوڕۆمی دیجیتاڵ',mobileLabel:'ئامادەی مۆبایل',birthdayReward:'دیاریی لەدایکبوون',saveBirthday:'هەڵگرتنی ڕۆژی لەدایکبوون',memberRewards:'خەڵاتی ئەندامان',launchCenter:'ناوەندی بڵاوکردنەوە',launchNote:'Backup ـی ناوخۆیی و ڕاپۆرتی داواکاری دابگرە و ئامادەیی وێبسایت بپشکنە.'},
+ ar:{clubTitle:'نادي DEVA VIP',clubText:'اجمع النقاط وافتح عروضاً خاصة واحصل على مكافأة عيد الميلاد.',joinClub:'انضم للنادي',shareSite:'شارك DEVA',languagesLabel:'لغات',categoriesLabel:'مجموعات',digitalLabel:'معرض رقمي',mobileLabel:'جاهز للموبايل',birthdayReward:'مكافأة عيد الميلاد',saveBirthday:'حفظ تاريخ الميلاد',memberRewards:'مكافآت الأعضاء',launchCenter:'مركز الإطلاق',launchNote:'نزّل نسخة احتياطية محلية وتقرير الطلبات وراجع جاهزية الموقع.'},
+ en:{clubTitle:'DEVA VIP Club',clubText:'Earn points, unlock private offers and receive a birthday reward.',joinClub:'Join the club',shareSite:'Share DEVA',languagesLabel:'Languages',categoriesLabel:'Collections',digitalLabel:'Digital showroom',mobileLabel:'Mobile ready',birthdayReward:'Birthday reward',saveBirthday:'Save birthday',memberRewards:'Member rewards',launchCenter:'Launch Center',launchNote:'Export a local backup, download an order report and review launch readiness.'},
+ tr:{clubTitle:'DEVA VIP Club',clubText:'Puan kazanın, özel teklifleri açın ve doğum günü ödülü alın.',joinClub:'Kulübe katıl',shareSite:'DEVA’yı paylaş',languagesLabel:'Dil',categoriesLabel:'Koleksiyon',digitalLabel:'Dijital showroom',mobileLabel:'Mobil uyumlu',birthdayReward:'Doğum günü ödülü',saveBirthday:'Doğum gününü kaydet',memberRewards:'Üye ödülleri',launchCenter:'Yayın Merkezi',launchNote:'Yerel yedek ve sipariş raporu indirin, yayın hazırlığını kontrol edin.'}
+};Object.keys(p5extra).forEach(l=>Object.assign(D.translations[l],p5extra[l]));
+let loyalty=load('deva-loyalty',{joined:false,birthday:'',bonus:0});
+function orderSpend(){return (orders||[]).reduce((s,o)=>s+Number(o.total||0),0)}
+function loyaltyPoints(){return Math.floor(orderSpend()/10)+Number(loyalty.bonus||0)}
+function loyaltyTier(points){if(points>=1000)return'DIAMOND';if(points>=500)return'PLATINUM';if(points>=200)return'GOLD';return loyalty.joined?'MEMBER':'GUEST'}
+function renderClub(){const pts=loyaltyPoints(),tier=loyaltyTier(pts),next=tier==='GUEST'?1:tier==='MEMBER'?200:tier==='GOLD'?500:tier==='PLATINUM'?1000:1000;const progress=Math.min(100,Math.round((pts/next)*100));if($('#clubPoints'))$('#clubPoints').textContent=pts;if($('#clubTier'))$('#clubTier').textContent=tier;if($('#clubProgress'))$('#clubProgress').style.width=progress+'%';if($('#loyaltySummary'))$('#loyaltySummary').innerHTML=`<div><small>STATUS</small><strong>${tier}</strong></div><div><small>POINTS</small><strong>${pts}</strong></div><div><small>ORDERS</small><strong>${(orders||[]).length}</strong></div>`;const rewards=[{p:100,n:'WELCOME MEMBER COUPON'},{p:200,n:'5% PRIVATE OFFER'},{p:500,n:'FREE DELIVERY'},{p:1000,n:'VIP 15% COUPON'}];if($('#rewardList'))$('#rewardList').innerHTML=rewards.map(r=>`<div class="reward-row ${pts>=r.p?'unlocked':''}"><span>${r.n}</span><b>${pts>=r.p?'✓':r.p+' pts'}</b></div>`).join('');}
+function openLoyalty(){renderClub();modalOpen('loyaltyModal')}
+$('#loyaltyBtn').onclick=openLoyalty;$('#clubJoinBtn').onclick=()=>{loyalty.joined=true;loyalty.bonus=Math.max(50,loyalty.bonus||0);save('deva-loyalty',loyalty);renderClub();toast('Welcome to DEVA VIP Club')};
+$('#birthdayForm').onsubmit=e=>{e.preventDefault();loyalty.birthday=$('#birthdayDate').value;save('deva-loyalty',loyalty);const m=String(loyalty.birthday).slice(5).replace('-','');const code='BDAY'+m;$('#birthdayResult').innerHTML=`<div class="coupon-ok">Birthday coupon: <b>${code}</b> · 10%</div>`;renderClub()};if(loyalty.birthday)$('#birthdayDate').value=loyalty.birthday;
+async function shareDeva(){const data={title:'DEVA Furniture Erbil',text:'Discover DEVA Furniture Erbil',url:location.href};try{if(navigator.share)await navigator.share(data);else{await navigator.clipboard.writeText(location.href);toast('Link copied')}}catch(e){}}
+$('#shareSiteBtn').onclick=shareDeva;
+function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function launchItems(){return[{n:'Responsive layout',ok:true},{n:'Four languages',ok:true},{n:'PWA manifest',ok:!!document.querySelector('link[rel="manifest"]')},{n:'Product catalog',ok:D.products.length>0},{n:'Social links',ok:true},{n:'Online database',ok:false},{n:'Real payment gateway',ok:false},{n:'True 3D AR models',ok:false}]}
+function openLaunch(){const box=$('#launchChecklist');box.innerHTML=launchItems().map(x=>`<div class="launch-item"><span>${x.n}</span><b class="${x.ok?'ok':'warn'}">${x.ok?'READY':'NEXT PHASE'}</b></div>`).join('');modalOpen('backupModal')}
+const oldAdminClick=$('#adminBtn').onclick;$('#adminBtn').onclick=e=>{if(e.shiftKey)openLaunch();else if(oldAdminClick)oldAdminClick.call($('#adminBtn'),e);else modalOpen('adminModal')};
+const launchBtn=document.createElement('button');launchBtn.className='outline-btn';launchBtn.textContent='Launch Center';launchBtn.onclick=openLaunch;const adminPanel=$('#adminModal .panel-content');if(adminPanel)adminPanel.insertBefore(launchBtn,adminPanel.children[3]||null);
+$('#exportBackup').onclick=()=>{const backup={exportedAt:new Date().toISOString(),profile:load('deva-profile',{}),cart,wishlist,compare,orders,coupons,loyalty,analytics};download('deva-backup.json',JSON.stringify(backup,null,2))};
+$('#exportOrders').onclick=()=>{const rows=[['Code','Date','Customer','Phone','Total','Status'],...(orders||[]).map(o=>[o.code,o.date||'',o.customer?.name||'',o.customer?.phone||'',o.total||0,o.status||''])];download('deva-orders.csv',rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n'),'text/csv')};
+$('#printSummary').onclick=()=>window.print();
+function setNetwork(){const b=$('#networkBadge');if(!b)return;const online=navigator.onLine;b.textContent=online?'● Online':'● Offline mode';b.className='network-badge show '+(online?'':'offline');setTimeout(()=>b.classList.remove('show'),2200)}window.addEventListener('online',setNetwork);window.addEventListener('offline',setNetwork);
+// Accessibility and performance improvements
+$$('img').forEach(img=>{if(!img.loading)img.loading='lazy';img.decoding='async'});$$('button').forEach(b=>{if(!b.type)b.type='button'});document.addEventListener('keydown',e=>{if(e.key==='Escape'){$$('.modal.open').forEach(m=>m.classList.remove('open'));$('#drawer')?.classList.remove('open');$('#comparePanel')?.classList.remove('open')}});
+const oldSetLang5=setLang;setLang=function(l){oldSetLang5(l);renderClub();window.dispatchEvent(new CustomEvent('deva-language-change',{detail:{lang:l}}))};renderClub();setLang(lang);
+
+
+// DEVA Dark / Light Mode — remembers the visitor preference
+(function initDevaTheme(){
+  const key='deva-theme';
+  const btn=document.getElementById('themeBtn');
+  if(!btn)return;
+  const saved=localStorage.getItem(key);
+  const preferred=saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  function apply(theme){
+    const light=theme==='light';
+    document.body.classList.toggle('light-theme',light);
+    document.documentElement.style.colorScheme=light?'light':'dark';
+    btn.textContent=light?'☾':'☀';
+    btn.setAttribute('aria-label',light?'چالاککردنی دۆخی تاریک':'چالاککردنی دۆخی ڕووناک');
+    btn.title=light?'Dark Mode':'Light Mode';
+  }
+  apply(preferred);
+  btn.addEventListener('click',()=>{
+    const next=document.body.classList.contains('light-theme')?'dark':'light';
+    localStorage.setItem(key,next);
+    apply(next);
+  });
+})();
+
+// Privacy-friendly first-party analytics for DEVA dashboard.
+(function initDevaAnalytics(){
+  try{
+    const key='deva-analytics-session';
+    let sid=sessionStorage.getItem(key);
+    if(!sid){sid=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));sessionStorage.setItem(key,sid)}
+    const send=(eventType,extra={})=>fetch('/api/analytics/events',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sessionId:sid,eventType,path:location.pathname+location.search,referrer:document.referrer||'',...extra}),keepalive:true}).catch(()=>{});
+    send('page_view');
+    document.addEventListener('click',e=>{
+      const a=e.target.closest('a[href*="wa.me"],a[href*="whatsapp"],a[href*="api.whatsapp.com"]');if(a)send('whatsapp_click');
+      const product=e.target.closest('[data-id],[data-product-id]');if(product){const id=product.dataset.productId||product.dataset.id;if(id)send('product_view',{productId:String(id).slice(0,120)})}
+    },{passive:true});
+  }catch{}
+})();
+
+
+// Phase 6 — one-time 20% app-install welcome gift
+function unlockWelcome20(show=true){if(localStorage.getItem('deva-welcome20-used')==='1')return;localStorage.setItem('deva-welcome20-unlocked','1');if(show&&$('#welcomeGiftModal'))modalOpen('welcomeGiftModal')}
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+window.addEventListener('appinstalled',()=>{unlockWelcome20(true);toast('🎁 20% دیاری بۆ یەکەم داواکاری چالاک کرا')});
+if(isStandalone()&&localStorage.getItem('deva-welcome20-unlocked')!=='1')setTimeout(()=>unlockWelcome20(true),900);
+if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeGiftModal');document.querySelector('#products')?.scrollIntoView({behavior:'smooth'})};
+
+
+// Dynamic products created from Admin Dashboard.
+(async function loadDashboardProducts(){
+  try{
+    // Keep the built-in catalog as a safe public fallback. Render free instances can
+    // briefly start with an empty/recreated SQLite database during a deploy.
+    const builtinProducts=Array.isArray(D.products)?D.products.slice():[];
+    const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    if(!r.ok) return;
+    const rows=await r.json();
+    if(!Array.isArray(rows)) return;
+
+    // IMPORTANT: never replace a valid built-in catalog with an empty API response.
+    // This is what caused category pages such as #category-corner to show no products
+    // immediately after a Render deploy.
+    if(rows.length>0){
+      const apiProducts=rows.map(x=>{
+        let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
+        if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
+        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd||0)?Number(x.old_price_usd).toLocaleString('en-US')+'$':'',images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
+      });
+      // D27: API is an overlay, never the whole catalog. A partial Render/SQLite
+      // response must not remove categories from the showroom.
+      const apiById=new Map(apiProducts.map(p=>[String(p.id),p]));
+      const apiByCode=new Map(apiProducts.filter(p=>p.code).map(p=>[String(p.code),p]));
+      const merged=builtinProducts.map(b=>{
+        const a=apiById.get(String(b.id))||apiByCode.get(String(b.code||''));
+        return a?{...b,...a,id:b.id,name:b.name,category:b.category,image:b.image,images:(b.images&&b.images.length)?b.images:a.images,code:b.code||a.code}:b;
+      });
+      // Keep genuine Admin-only products too, but never duplicate a built-in identity.
+      const builtinIds=new Set(builtinProducts.map(b=>String(b.id)));
+      const builtinCodes=new Set(builtinProducts.map(b=>String(b.code||'')));
+      const adminOnly=apiProducts.filter(a=>!builtinIds.has(String(a.id))&&!builtinCodes.has(String(a.code||'')));
+      D.products=[...merged,...adminOnly];
+    }else{
+      D.products=builtinProducts;
+    }
+
+    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
+    renderFilters();renderProducts();renderRecent();updateCategoryNav();
+  }catch(e){
+    // Network/API failure: retain data.js products and still honor the direct category URL.
+    const wanted=location.hash.startsWith('#category-')?location.hash.replace('#category-',''):'';
+    if(wanted && D.products.some(p=>p.category===wanted)) cat=wanted;
+    renderFilters();renderProducts();renderRecent();updateCategoryNav();
+  }
+})();
+
+
+/* DEVA main hamburger menu — professional 4-language drawer */
+(function(){
+ const menuText={
+  ku:{account:'ئەکاونتی شەخسی',accountSub:'هەژمار، دڵخوازەکان و داواکارییەکان',language:'زمانەکان',discover:'خزمەتگوزارییەکانی DEVA',social:'تۆڕە کۆمەڵایەتییەکان',info:'زانیاری و پەیوەندی',rewards:'دیارییەکانی دێڤا',rewardsSub:'خەڵات، QR و ڕاکێشان',address:'ناونیشان',addressSub:'پێشانگای DEVA لە هەولێر',contact:'پەیوەندی',contactSub:'ژمارە و ڕێگاکانی پەیوەندی',ai:'DEVA AI',aiSub:'یارمەتیدەری زیرەکی هەڵبژاردن',ar:'DEVA AR',arSub:'بینینی کەلوپەل لە ژوورەکەت',follow:'شوێنمان بکەوە',track:'شوێنکەوتنی داواکاری',trackSub:'دۆخی داواکارییەکەت ببینە',compare:'بەراوردکردن',compareSub:'بەرهەمەکان بەراورد بکە',vip:'DEVA VIP CLUB',vipSub:'خاڵ، ئۆفەر و خەڵاتی ئەندامان'},
+  ar:{account:'الحساب الشخصي',accountSub:'الحساب والمفضلة والطلبات',language:'اللغات',discover:'خدمات DEVA',social:'وسائل التواصل الاجتماعي',info:'المعلومات والتواصل',rewards:'هدايا DEVA',rewardsSub:'الجوائز وQR والسحوبات',address:'العنوان',addressSub:'معرض DEVA في أربيل',contact:'اتصل بنا',contactSub:'الأرقام وطرق التواصل',ai:'DEVA AI',aiSub:'مساعد ذكي لاختيار الأثاث',ar:'DEVA AR',arSub:'شاهد الأثاث داخل غرفتك',follow:'تابعنا',track:'تتبع الطلب',trackSub:'تحقق من حالة طلبك',compare:'المقارنة',compareSub:'قارن بين المنتجات',vip:'DEVA VIP CLUB',vipSub:'نقاط وعروض ومكافآت الأعضاء'},
+  en:{account:'My Account',accountSub:'Profile, favorites and orders',language:'Languages',discover:'DEVA Services',social:'Social Media',info:'Information & Contact',rewards:'DEVA Gifts',rewardsSub:'Rewards, QR and draws',address:'Address',addressSub:'DEVA showroom in Erbil',contact:'Contact Us',contactSub:'Phone numbers and contact options',ai:'DEVA AI',aiSub:'Smart furniture assistant',ar:'DEVA AR',arSub:'Preview furniture in your room',follow:'Follow DEVA',track:'Order Tracking',trackSub:'Check your order status',compare:'Compare',compareSub:'Compare selected products',vip:'DEVA VIP CLUB',vipSub:'Points, offers and member rewards'},
+  tr:{account:'Kişisel Hesap',accountSub:'Profil, favoriler ve siparişler',language:'Diller',discover:'DEVA Hizmetleri',social:'Sosyal Medya',info:'Bilgi ve İletişim',rewards:'DEVA Hediyeleri',rewardsSub:'Ödüller, QR ve çekilişler',address:'Adres',addressSub:'Erbil DEVA mağazası',contact:'İletişim',contactSub:'Telefon ve iletişim seçenekleri',ai:'DEVA AI',aiSub:'Akıllı mobilya asistanı',ar:'DEVA AR',arSub:'Mobilyayı odanızda görün',follow:'DEVA’yı Takip Et',track:'Sipariş Takibi',trackSub:'Sipariş durumunu kontrol et',compare:'Karşılaştır',compareSub:'Ürünleri karşılaştır',vip:'DEVA VIP CLUB',vipSub:'Puanlar, teklifler ve üye ödülleri'}
+ };
+ const social={instagram:'https://www.instagram.com/deva.furniture.erbil',tiktok:'https://www.tiktok.com/@deva.furniture.er',facebook:'https://www.facebook.com/profile.php?id=61585916741196',whatsapp:'https://wa.me/9647509412626'};
+ const body=document.getElementById('mainMenuBody'), panel=document.getElementById('mainMenu'), back=document.getElementById('mainMenuBackdrop'), btn=document.getElementById('mainMenuBtn'), close=document.getElementById('mainMenuClose');
+ if(!body||!panel||!btn)return;
+ function item(action,icon,title,sub,extra=''){return `<button class="main-menu-card" data-action="${action}"><span class="main-menu-icon">${icon}</span><span class="main-menu-copy"><b>${title}</b><small>${sub||''}</small></span><i>›</i>${extra}</button>`}
+ function renderMenu(){const x=menuText[lang]||menuText.ku;body.innerHTML=`
+  <section class="main-menu-profile">
+   <div class="main-menu-logo">D</div><div><strong>DEVA FURNITURE</strong><span>ERBİL • PREMIUM FURNITURE</span></div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.account}</div>
+   ${item('account','👤',x.account,x.accountSub)}
+  </section>
+  <section class="main-menu-section main-menu-language">
+   <div class="main-menu-section-title">${x.language}</div>
+   <button class="main-menu-card language-card" data-action="langs"><span class="main-menu-icon">文</span><span class="main-menu-copy"><b>${x.language}</b><small>${lang.toUpperCase()}</small></span><i class="menu-chevron">⌄</i></button>
+   <div class="main-menu-lang-options" hidden>${['ku','ar','en','tr'].map(l=>`<button data-menu-lang="${l}" class="${l===lang?'active':''}">${l.toUpperCase()}</button>`).join('')}</div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.discover}</div>
+   <div class="main-menu-feature-grid">
+    <button class="main-menu-feature" data-action="rewards"><span>🎁</span><b>${x.rewards}</b><small>${x.rewardsSub}</small></button>
+    <button class="main-menu-feature" data-action="ar"><span>AR</span><b>${x.ar}</b><small>${x.arSub}</small></button>
+    <button class="main-menu-feature" data-action="ai"><span>AI</span><b>${x.ai}</b><small>${x.aiSub}</small></button>
+   </div>
+   ${item('tracking','📦',x.track,x.trackSub)}
+   ${item('compare','⚖',x.compare,x.compareSub)}
+   ${item('vip','♛',x.vip,x.vipSub)}
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.social}</div>
+   <div class="main-menu-social-grid">
+    <a href="${social.instagram}" target="_blank" rel="noopener"><span>◎</span><b>Instagram</b></a>
+    <a href="${social.tiktok}" target="_blank" rel="noopener"><span>♪</span><b>TikTok</b></a>
+    <a href="${social.facebook}" target="_blank" rel="noopener"><span>f</span><b>Facebook</b></a>
+    <a href="${social.whatsapp}" target="_blank" rel="noopener"><span>◉</span><b>WhatsApp</b></a>
+   </div>
+  </section>
+  <section class="main-menu-section">
+   <div class="main-menu-section-title">${x.info}</div>
+   <a class="main-menu-card" href="https://www.google.com/maps/search/?api=1&query=DEVA+Furniture+Erbil" target="_blank" rel="noopener"><span class="main-menu-icon">⌖</span><span class="main-menu-copy"><b>${x.address}</b><small>${x.addressSub}</small></span><i>›</i></a>
+   <a class="main-menu-card" href="#contact" data-action="contact"><span class="main-menu-icon">☎</span><span class="main-menu-copy"><b>${x.contact}</b><small>${x.contactSub}</small></span><i>›</i></a>
+  </section>
+  <div class="main-menu-footer"><span>DEVA FURNITURE ERBİL</span><small>0750 941 2626 • 0770 941 2626</small></div>`;
+  body.querySelector('[data-action="account"]').onclick=()=>{hideMenu();document.getElementById('accountBtn')?.click()};
+  body.querySelector('[data-action="rewards"]').onclick=()=>{hideMenu();document.getElementById('devaRewards')?.scrollIntoView({behavior:'smooth'})};
+  body.querySelector('[data-action="ar"]').onclick=()=>{hideMenu();document.getElementById('roomBtn')?.click()};
+  body.querySelector('[data-action="ai"]').onclick=()=>{hideMenu();document.getElementById('aiBtn')?.click()};
+  body.querySelector('[data-action="tracking"]').onclick=()=>{hideMenu();document.getElementById('trackBtn')?.click()};
+  body.querySelector('[data-action="compare"]').onclick=()=>{hideMenu();document.getElementById('compareBtn')?.click()};
+  body.querySelector('[data-action="vip"]').onclick=()=>{hideMenu();document.getElementById('loyaltyBtn')?.click()};
+  const contact=body.querySelector('[data-action="contact"]');if(contact)contact.onclick=(e)=>{e.preventDefault();hideMenu();if(window.DEVA_MOBILE_INTERACTIONS?.openContact)window.DEVA_MOBILE_INTERACTIONS.openContact();else document.getElementById('contact')?.scrollIntoView({behavior:'smooth',block:'start'})};
+  const lb=body.querySelector('[data-action="langs"]'), opts=body.querySelector('.main-menu-lang-options');lb.onclick=()=>{opts.hidden=!opts.hidden;lb.classList.toggle('open',!opts.hidden)};
+  body.querySelectorAll('[data-menu-lang]').forEach(b=>b.onclick=()=>{setLang(b.dataset.menuLang);renderMenu()});
+ }
+ function showMenu(){renderMenu();panel.classList.add('open');back?.classList.add('open');panel.setAttribute('aria-hidden','false');btn.setAttribute('aria-expanded','true');document.body.classList.add('menu-open')}
+ function hideMenu(){panel.classList.remove('open');back?.classList.remove('open');panel.setAttribute('aria-hidden','true');btn.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')}
+ btn.onclick=showMenu;close.onclick=hideMenu;if(back)back.onclick=hideMenu;document.addEventListener('keydown',e=>{if(e.key==='Escape')hideMenu()});
+ window.addEventListener('deva-language-change',renderMenu);renderMenu();
+})();
+
+// D11: public navigation hooks used by the mobile/direct-link reliability patch.
+window.selectCategory = selectCategory;
+window.openModal = openModal;
