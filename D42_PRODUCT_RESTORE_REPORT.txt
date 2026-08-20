@@ -1,0 +1,8 @@
+DEVA D42 PRODUCT RESTORE
+- Base: D41 (stable D27 backend with admin actions fixes)
+- Restored server/src/builtin-products.json with 155 products
+- Restored D27 db.js catalog bootstrap and syncBuiltinCatalog export
+- Keeps D41 delete persistence via app_meta deleted_product markers
+- Keeps price save and active/inactive routes
+- Added package-lock.json for Render npm ci compatibility
+- Syntax checked: server/src/db.js and server/src/server.js
