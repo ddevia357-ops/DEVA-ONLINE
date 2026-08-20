@@ -200,7 +200,35 @@ function ensureBuiltinProductRow(requestedId){
   }
   return id;
 }
+function syncBuiltinCatalog({ onlyWhenEmpty = false } = {}) {
+  const count = Number(
+    db.prepare('SELECT count(*) AS n FROM products').get()?.n || 0
+  );
 
+  if (onlyWhenEmpty && count > 0) {
+    return { inserted: 0, updated: 0 };
+  }
+
+  let inserted = 0;
+  let updated = 0;
+
+  for (const item of builtinCatalog) {
+    const id = String(item.id);
+    const existing = db.prepare(
+      'SELECT id FROM products WHERE id=?'
+    ).get(id);
+
+    ensureBuiltinProductRow(id);
+
+    if (existing) {
+      updated++;
+    } else {
+      inserted++;
+    }
+  }
+
+  return { inserted, updated };
+}
 // One-time D27 recovery for older patches that accidentally left built-in products inactive.
 try{
   const key='d27_builtin_active_recovery';
