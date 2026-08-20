@@ -174,7 +174,10 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
   try{
     // Keep the built-in catalog as a safe public fallback. Render free instances can
     // briefly start with an empty/recreated SQLite database during a deploy.
-    const builtinProducts=Array.isArray(D.products)?D.products.slice():[];
+    const allBuiltinProducts=Array.isArray(D.products)?D.products.slice():[];
+    const tombstones=[]; // D34 compatibility: do not depend on tombstone API
+    const deletedIds=new Set((tombstones||[]).map(x=>String(x.product_id||'')));const deletedCodes=new Set((tombstones||[]).map(x=>String(x.product_code||'')));
+    const builtinProducts=allBuiltinProducts.filter(p=>!deletedIds.has(String(p.id))&&!deletedCodes.has(String(p.code||'')));
     const r=await fetch('/api/products?ts='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
     if(!r.ok) return;
     const rows=await r.json();
@@ -187,7 +190,7 @@ if($('#welcomeGiftShop'))$('#welcomeGiftShop').onclick=()=>{modalClose('welcomeG
       const apiProducts=rows.map(x=>{
         let gallery=[];try{gallery=JSON.parse(x.images_json||'[]')}catch{}
         if(!Array.isArray(gallery)||!gallery.length)gallery=x.image?[x.image]:[];
-        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:Number(x.old_price_usd ?? x.oldPrice ?? 0)>0?Number(x.old_price_usd ?? x.oldPrice).toLocaleString('en-US')+'$':'',images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
+        const builtin=builtinProducts.find(b=>String(b.id)===String(x.id)||String(b.code||'')===String(x.product_code||'')||(String(b.name||'').toLowerCase()===String(x.name||'').toLowerCase()&&String(b.category||'')===String(x.category||''))); const safeCode=builtin?.code||((x.product_code&&x.product_code!=='0000')?x.product_code:''); return {id:builtin?.id||x.id,name:builtin?.name||x.name,category:builtin?.category||x.category,image:builtin?.image||x.image||gallery[0]||'',price:Number(x.price_usd||0)?Number(x.price_usd).toLocaleString('en-US')+'$':'',oldPrice:(()=>{const v=Number(x.old_price_usd ?? x.original_price_usd ?? x.oldPrice ?? 0);return Number.isFinite(v)&&v>0?v.toLocaleString('en-US')+'$':''})(),images:builtin?.images?.length?builtin.images:(gallery.length?gallery:[]),code:safeCode};
       });
       // D27: API is an overlay, never the whole catalog. A partial Render/SQLite
       // response must not remove categories from the showroom.
