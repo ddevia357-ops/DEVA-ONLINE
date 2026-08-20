@@ -21,10 +21,9 @@ function builtinAdminProducts(){
   return src.map((x,i)=>({id:x.id,name:x.name,category:x.category,image:x.image||'',price_usd:moneyNumber(x.price),old_price_usd:moneyNumber(x.oldPrice),active:1,stock_qty:0,low_stock_threshold:2,product_code:String(x.code||i+1).padStart(4,'0'),catalog_origin:'BUILTIN',__fallback:true}));
 }
 function mergeAdminProducts(dbRows){
-  // D41: the backend is the source of truth. The old fallback merge could make
-  // deleted/disabled built-in products appear again in Admin after refresh.
-  return (Array.isArray(dbRows)?dbRows:[]).map(x=>({...x,__fallback:false}))
-    .sort((a,b)=>Number(a.product_code||999999)-Number(b.product_code||999999));
+  const base=builtinAdminProducts(), byId=new Map(base.map(x=>[x.id,x]));
+  for(const row of Array.isArray(dbRows)?dbRows:[]){byId.set(row.id,{...byId.get(row.id),...row,__fallback:false});}
+  return [...byId.values()].sort((a,b)=>Number(a.product_code||999999)-Number(b.product_code||999999));
 }
 async function load(force=false){
   if(loadInFlight)return loadInFlight;
@@ -38,8 +37,8 @@ async function load(force=false){
 function bindRows(){
   $$('[data-save-price]').forEach(b=>b.onclick=async()=>{const id=b.dataset.savePrice;const x=(window.__adminProducts||[]).find(p=>p.id===id);const price=Number(document.querySelector(`[data-qprice="${CSS.escape(id)}"]`)?.value||0);const old=Number(document.querySelector(`[data-qoldprice="${CSS.escape(id)}"]`)?.value||0);if(!x)return note('بەرهەمەکە نەدۆزرایەوە',false);b.disabled=true;try{const saved=await api('/api/admin/products/'+encodeURIComponent(id)+'/price',{method:'PATCH',body:JSON.stringify({price_usd:price,old_price_usd:old})});x.price_usd=price;x.old_price_usd=old;if(saved?.product_code)x.product_code=saved.product_code;window.__adminProducts=(window.__adminProducts||[]).filter((p,i,a)=>a.findIndex(q=>String(q.id)===String(p.id)||(p.product_code&&q.product_code===p.product_code))===i);note('✓ نرخ گۆڕدرا — هەمان بەرهەم، هەمان وێنە و هەمان کۆد');renderAdminProducts(window.__adminProducts||[])}catch(e){note(e.message,false)}finally{b.disabled=false}});
   $$('[data-edit-product]').forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
-  $$('[data-toggle-product]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.toggleProduct)+'/active',{method:'PATCH',body:JSON.stringify({active:b.dataset.active!=='1'})});note(b.dataset.active==='1'?'بەرهەم ناچالاک کرا':'بەرهەم چالاک کرا');await load(true)}catch(e){note(e.message,false)}});
-  $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');window.__adminProducts=(window.__adminProducts||[]).filter(p=>String(p.id)!==String(b.dataset.del));renderAdminProducts(window.__adminProducts);await load(true)}catch(e){note(e.message,false)}});
+  $$('[data-toggle-product]').forEach(b=>b.onclick=async()=>{try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.toggleProduct)+'/active',{method:'PATCH',body:JSON.stringify({active:b.dataset.active!=='1'})});note(b.dataset.active==='1'?'بەرهەم ناچالاک کرا':'بەرهەم چالاک کرا');load()}catch(e){note(e.message,false)}});
+  $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('دڵنیایت ئەم بەرهەمە بە تەواوی بسڕدرێتەوە؟ ئەم کردارە ناگەڕێتەوە.'))return;try{await api('/api/admin/products/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});note('بەرهەمەکە بە تەواوی سڕایەوە');load()}catch(e){note(e.message,false)}});
   $$('[data-order]').forEach(s=>s.onchange=async()=>{try{await api('/api/admin/orders/'+encodeURIComponent(s.dataset.order),{method:'PATCH',body:JSON.stringify({status:s.value})});note('دۆخی داواکاری گۆڕدرا')}catch(e){note(e.message,false)}})
 }
 let editingProductId=null;
