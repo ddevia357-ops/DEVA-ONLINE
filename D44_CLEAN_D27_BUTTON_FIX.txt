@@ -1,0 +1,1 @@
+D44 is based only on clean D27. Fixes: Save Price recovery, Active/Inactive recovery, persistent Delete for built-in products via tombstones. Catalog/startup behavior otherwise preserved.
