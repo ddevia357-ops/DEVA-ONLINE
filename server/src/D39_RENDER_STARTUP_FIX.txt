@@ -1,0 +1,2 @@
+
+D39: Render startup hardened. push.js dependency is no longer imported by server.js, and push.js is also included for backwards compatibility. Verified server.js syntax and all relative imports.

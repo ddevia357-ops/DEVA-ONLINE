@@ -1,0 +1,30 @@
+DEVA D36 FULL VERIFIED PACKAGE
+
+This is the COMPLETE website package (frontend + backend + product images/assets).
+
+Verified in this package:
+- 474 files inside assets/
+- 328 asset references from data.js; 0 missing
+- All local HTML script/style references exist
+- All server/src relative imports resolve, including customer-auth.js and push.js
+- JavaScript syntax check passed for root JS files and server/src JS files
+- Build-version endpoint exists
+- Save Price endpoint exists with middleware order: requireAdmin -> requireCsrf -> allowPermission
+- Active/Inactive endpoint exists with middleware order: requireAdmin -> requireCsrf -> allowPermission
+- Delete endpoint exists with middleware order: requireAdmin -> requireCsrf -> allowPermission
+- Admin sends both price_usd and old_price_usd
+- product_price_overrides persistence exists for current and old price
+- Public /api/products maps old_price_usd to frontend oldPrice
+- Discount renderer displays old price + current price + percentage when old price > current price
+
+IMPORTANT DEPLOYMENT NOTE:
+Upload/replace the COMPLETE repository contents from this ZIP at the repository root. Do not upload only server.js or only package.json. The server requires the complete server/src folder.
+
+Expected live verification endpoint:
+/api/build-version
+
+Expected product tests after deploy:
+1) old price 2380, current price 1699 -> both prices appear and discount percentage is shown
+2) Save Price works
+3) Active/Inactive works
+4) Delete works

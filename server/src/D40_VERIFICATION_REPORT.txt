@@ -1,0 +1,22 @@
+DEVA P6 D40 - verification report
+
+Fixed:
+1. Render blueprint no longer uses npm ci without package-lock.json. It now uses npm install --omit=dev.
+2. Render blueprint is compatible with Free plan; removed persistent-disk requirement.
+3. Database, upload and backup paths now fall back to local writable folders when /var/data is unavailable.
+4. push.js dependency problem remains eliminated from server.js startup path; push implementation is embedded in server.js.
+5. Admin product actions are present and mapped to backend routes:
+   - Save price -> PATCH /api/admin/products/:id/price
+   - Enable/disable -> PATCH /api/admin/products/:id/active
+   - Delete -> DELETE /api/admin/products/:id
+6. SUPER_ADMIN and ADMIN both have products.write and products.delete permissions.
+7. Built-in product deletes use tombstones so deleted products do not immediately self-restore.
+
+Static verification performed:
+- All JavaScript files pass node --check.
+- All local relative imports referenced by server files exist.
+- /health route exists.
+- Product action frontend handlers and backend routes match.
+
+Limitation:
+This container has no npm packages installed and outbound npm install timed out, so a true local Node server boot with dependencies could not be completed here. Render will install dependencies using the corrected build command.
