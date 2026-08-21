@@ -1,13 +1,13 @@
-import 'dotenv/config';import express from 'express';import helmet from 'helmet';import cors from 'cors';import bcrypt from 'bcryptjs';import crypto from 'node:crypto';import {z} from 'zod';import {db,} from './db.js';import {authLimiter,apiLimiter,sensitiveLimiter,requireAdmin,requireCsrf,allowRoles,allowPermission,signAdmin,setSessionCookie,clearSessionCookie,revokeCurrentToken,audit,passwordIsStrong,pruneSecurityTables,securityAlert} from './security.js';import {createFibPayment,getFibStatus} from './fib.js';import {newTotpSecret,verifyTotp,otpauthUri} from './totp.js';import fs from 'node:fs';import multer from 'multer';import QRCode from 'qrcode';import path from 'node:path';import {fileURLToPath} from 'node:url';import {signCustomer,requireCustomer,optionalCustomer} from './customer-auth.js';
-
+import 'dotenv/config';import express from 'express';import helmet from 'helmet';import cors from 'cors';import bcrypt from 'bcryptjs';import crypto from 'node:crypto';import {z} from 'zod';import {db,syncBuiltinCatalog} from './db.js';import {authLimiter,apiLimiter,sensitiveLimiter,requireAdmin,requireCsrf,allowRoles,allowPermission,signAdmin,setSessionCookie,clearSessionCookie,revokeCurrentToken,audit,passwordIsStrong,pruneSecurityTables,securityAlert} from './security.js';import {createFibPayment,getFibStatus} from './fib.js';import {newTotpSecret,verifyTotp,otpauthUri} from './totp.js';import fs from 'node:fs';import multer from 'multer';import QRCode from 'qrcode';import path from 'node:path';import {fileURLToPath} from 'node:url';import {signCustomer,requireCustomer,optionalCustomer} from './customer-auth.js';
+import {sendExpoPush} from './push.js';
 if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<64)throw new Error('JWT_SECRET must be at least 64 random characters');
 if(process.env.NODE_ENV==='production'&&process.env.PUBLIC_BASE_URL?.startsWith('http://'))throw new Error('Production requires HTTPS PUBLIC_BASE_URL');
 if(process.env.FIB_MODE==='production'&&String(process.env.FIB_BASE_URL||'').includes('.stage.'))throw new Error('FIB production mode cannot use the stage/sandbox base URL');
 const app=express();app.disable('x-powered-by');app.get('/favicon.ico',(_req,res)=>res.status(204).end());if(process.env.TRUST_PROXY==='true')app.set('trust proxy',1);pruneSecurityTables();setInterval(pruneSecurityTables,6*60*60*1000).unref();
 app.use((req,res,next)=>{req.id=crypto.randomUUID();res.setHeader('X-Request-ID',req.id);next()});
 app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],imgSrc:["'self'",'data:','blob:','https:'],scriptSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'"],connectSrc:["'self'"],fontSrc:["'self'",'data:'],objectSrc:["'none'"],frameAncestors:["'none'"]}}}));
-app.use(cors({origin:(o,cb)=>{const allowed=(process.env.ALLOWED_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);const ok=!o||allowed.includes(o);cb(ok?null:new Error('CORS blocked'),ok)},credentials:true,methods:['GET','POST','PATCH','DELETE'],allowedHeaders:['Content-Type','X-CSRF-Token','Authorization']}));app.use(express.json({limit:'100kb',strict:true}));app.use('/api',(req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('Pragma','no-cache');res.setHeader('X-DEVA-Build','D35');next()});app.use('/api',(req,res,next)=>{if(String(req.path||'').startsWith('/admin/'))return next();return apiLimiter(req,res,next)});
-app.get('/api/build-version',(_req,res)=>res.json({build:'D35',adminRateLimitBypass:true,adminAutoPolling:false,productMutations:'auth-csrf-fixed',oldPrice:'verified'}));
+app.use(cors({origin:(o,cb)=>{const allowed=(process.env.ALLOWED_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);const ok=!o||allowed.includes(o);cb(ok?null:new Error('CORS blocked'),ok)},credentials:true,methods:['GET','POST','PATCH','DELETE'],allowedHeaders:['Content-Type','X-CSRF-Token','Authorization']}));app.use(express.json({limit:'100kb',strict:true}));app.use('/api',(req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('Pragma','no-cache');res.setHeader('X-DEVA-Build','D27');next()});app.use('/api',(req,res,next)=>{if(String(req.path||'').startsWith('/admin/'))return next();return apiLimiter(req,res,next)});
+app.get('/api/build-version',(_req,res)=>res.json({build:'D26',adminRateLimitBypass:true,adminAutoPolling:false}));
 const adminEmail=(process.env.ADMIN_EMAIL||'admin@devafurniture.com').trim().toLowerCase();const adminPassword=process.env.ADMIN_PASSWORD||'';const resetAdminOnceToken=(process.env.RESET_ADMIN_ONCE_TOKEN||'').trim();let existing=db.prepare('SELECT id FROM admins WHERE email=?').get(adminEmail);if(resetAdminOnceToken){if(!passwordIsStrong(adminPassword))throw new Error('ADMIN_PASSWORD must be 14+ chars with uppercase, lowercase, number and symbol');const resetHash=crypto.createHash('sha256').update(resetAdminOnceToken).digest('hex');const alreadyReset=db.prepare('SELECT token_hash FROM admin_reset_events WHERE token_hash=?').get(resetHash);if(!alreadyReset){const tx=db.transaction(()=>{let target=existing;if(!target)target=db.prepare("SELECT id FROM admins WHERE role='SUPER_ADMIN' ORDER BY id LIMIT 1").get();const passwordHash=bcrypt.hashSync(adminPassword,14);if(target){db.prepare("UPDATE admins SET email=?,password_hash=?,role='SUPER_ADMIN',active=1,failed_attempts=0,lock_until=NULL,totp_secret=NULL,totp_enabled=0,token_version=token_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?").run(adminEmail,passwordHash,target.id);}else{db.prepare("INSERT INTO admins(email,password_hash,role,active,failed_attempts,lock_until,totp_secret,totp_enabled) VALUES(?,?,'SUPER_ADMIN',1,0,NULL,NULL,0)").run(adminEmail,passwordHash);}db.prepare('INSERT INTO admin_reset_events(token_hash) VALUES(?)').run(resetHash);});tx();existing=db.prepare('SELECT id FROM admins WHERE email=?').get(adminEmail);console.log('DEVA Admin one-time reset applied');console.log('Admin email: '+adminEmail);console.log('2FA: OFF - re-enable after login');}}if(!existing){if(!passwordIsStrong(adminPassword))throw new Error('ADMIN_PASSWORD must be 14+ chars with uppercase, lowercase, number and symbol');db.prepare("INSERT INTO admins(email,password_hash,role) VALUES(?,?, 'SUPER_ADMIN')").run(adminEmail,bcrypt.hashSync(adminPassword,14));}
 // One-time reset is handled above through RESET_ADMIN_ONCE_TOKEN and admin_reset_events.
 const roles=['SUPER_ADMIN','ADMIN','STAFF'];
@@ -107,7 +107,7 @@ app.post('/api/rewards/presence',(req,res)=>{const v=z.object({sessionId:z.strin
 app.get('/api/rewards/live',(req,res)=>res.json(rewardPresenceStats()));
 app.get('/api/admin/rewards/live',requireAdmin,allowPermission('rewards.manage'),(req,res)=>res.json(rewardPresenceStats()));
 
-app.get('/api/deploy-version',(_req,res)=>res.json({version:'D33-old-price-single-source',catalogSync:true,nextCode:true}));
+app.get('/api/deploy-version',(_req,res)=>res.json({version:'D45-overlay-recovery',catalogSync:true,nextCode:true}));
 app.get('/api/rewards/public',(req,res)=>{const cfg=rewardConfig();const count=db.prepare('SELECT count(*) n FROM rewards_members WHERE active=1').get().n;const prizes=db.prepare('SELECT id,label,type,value,min_purchase_usd,is_grand FROM rewards_prizes WHERE active=1 ORDER BY is_grand,id').all();const recent=db.prepare("SELECT d.id,d.drawn_at,d.is_grand,p.label,m.customer_name,m.phone FROM rewards_draws d JOIN rewards_members m ON m.id=d.member_id JOIN rewards_prizes p ON p.id=d.prize_id ORDER BY d.id DESC LIMIT 12").all().map(x=>({...x,customer_name:x.customer_name.length>2?x.customer_name.slice(0,2)+'***':'***',phone:x.phone?x.phone.slice(0,4)+'****'+x.phone.slice(-2):''}));res.json({active:!!cfg.enabled,started:count>=cfg.target_members,members:count,target:cfg.target_members,fridayHour:cfg.friday_hour,timezone:cfg.timezone,prizes,recent})});
 app.get('/api/rewards/member',(req,res)=>{const phone=rewardsPhone(req.query.phone);if(phone.length<7)return res.status(400).json({error:'Phone required'});const m=db.prepare('SELECT id,customer_name,phone,email,active,joined_at,wins_count FROM rewards_members WHERE phone=?').get(phone);if(!m)return res.json({member:null,wins:[]});const wins=db.prepare("SELECT d.id,d.draw_key,d.is_grand,d.redeem_code,d.redeem_status,d.expires_at,d.drawn_at,p.label,p.type,p.value,p.min_purchase_usd FROM rewards_draws d JOIN rewards_prizes p ON p.id=d.prize_id WHERE d.member_id=? ORDER BY d.id DESC LIMIT 20").all(m.id);res.json({member:m,wins})});
 app.post('/api/rewards/activate',authLimiter,(req,res)=>{const v=z.object({customer_name:z.string().trim().min(2).max(100),phone:z.string().trim().min(7).max(25),email:z.string().email().optional().or(z.literal('')),token:z.string().min(8).max(500),consent:z.literal(true)}).strict().safeParse(req.body);if(!v.success)return res.status(400).json({error:'Invalid member data'});const expected=rewardToken();if(expected.length<24)return res.status(503).json({error:'Rewards QR is not configured'});if(!safeTokenEqual(v.data.token,expected))return res.status(403).json({error:'Invalid DEVA showroom QR'});const phone=rewardsPhone(v.data.phone);const row=db.prepare('SELECT id FROM rewards_members WHERE phone=?').get(phone);if(row){db.prepare('UPDATE rewards_members SET customer_name=?,email=?,active=1,last_seen_at=CURRENT_TIMESTAMP WHERE id=?').run(v.data.customer_name,v.data.email||null,row.id);return res.json({ok:true,alreadyMember:true})}const info=db.prepare('INSERT INTO rewards_members(customer_name,phone,email,consent) VALUES(?,?,?,1)').run(v.data.customer_name,phone,v.data.email||null);res.status(201).json({ok:true,memberId:info.lastInsertRowid})});
@@ -118,35 +118,114 @@ app.post('/api/admin/rewards/draw',requireAdmin,requireCsrf,sensitiveLimiter,all
 app.post('/api/admin/rewards/draws/:id/redeem',requireAdmin,requireCsrf,allowPermission('rewards.manage'),(req,res)=>{const id=Number(req.params.id);const d=db.prepare("SELECT id,redeem_status FROM rewards_draws WHERE id=?").get(id);if(!d)return res.status(404).json({error:'Draw not found'});if(d.redeem_status==='REDEEMED')return res.status(409).json({error:'Already redeemed'});db.prepare("UPDATE rewards_draws SET redeem_status='REDEEMED',redeemed_at=CURRENT_TIMESTAMP WHERE id=?").run(id);audit(req,'REWARD_REDEEMED',String(id));res.json({ok:true})});
 app.get('/api/admin/rewards/qr.svg',requireAdmin,allowPermission('rewards.manage'),async(req,res)=>{const token=rewardToken();if(token.length<24)return res.status(503).send('REWARDS_QR_TOKEN not configured');const base=(process.env.PUBLIC_BASE_URL||`${req.protocol}://${req.get('host')}`).replace(/\/$/,'');const url=`${base}/?deva_reward=${encodeURIComponent(token)}`;const svg=await QRCode.toString(url,{type:'svg',margin:2,width:420,errorCorrectionLevel:'M'});res.type('image/svg+xml').send(svg)});
 
+// D46 defensive live-schema migration: persistent Render databases may predate product_code.
+// Ensure every product column required by the Admin/catalog routes exists before any product query runs.
+function ensureLiveProductSchema(){
+  const cols=new Set(db.prepare('PRAGMA table_info(products)').all().map(x=>String(x.name)));
+  const migrations=[
+    ['stock_qty','ALTER TABLE products ADD COLUMN stock_qty INTEGER NOT NULL DEFAULT 0'],
+    ['low_stock_threshold','ALTER TABLE products ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 2'],
+    ['product_code','ALTER TABLE products ADD COLUMN product_code TEXT'],
+    ['old_price_usd','ALTER TABLE products ADD COLUMN old_price_usd REAL'],
+    ['images_json',"ALTER TABLE products ADD COLUMN images_json TEXT NOT NULL DEFAULT '[]'"],
+    ['catalog_origin',"ALTER TABLE products ADD COLUMN catalog_origin TEXT NOT NULL DEFAULT 'ADMIN'"]
+  ];
+  for(const [name,sql] of migrations){
+    if(!cols.has(name)){
+      db.exec(sql);
+      cols.add(name);
+      console.log(`[D46] Added missing products.${name}`);
+    }
+  }
+  const tombCols=new Set(db.prepare('PRAGMA table_info(product_tombstones)').all().map(x=>String(x.name)));
+  if(!tombCols.has('product_id')) throw new Error('product_tombstones.product_id missing');
+  return [...cols];
+}
+const liveProductColumns=ensureLiveProductSchema();
+if(!liveProductColumns.includes('product_code')) throw new Error('[D47] FATAL: products.product_code migration failed');
+console.log('[D47] LIVE PRODUCT SCHEMA OK:', liveProductColumns.join(','));
+
 const nextProductCode=()=>{const row=db.prepare("SELECT max(CAST(product_code AS INTEGER)) n FROM products WHERE product_code GLOB '[0-9]*'").get();return String(Math.max(155,Number(row?.n||155))+1).padStart(4,'0')};
-const builtinCatalogById=(()=>{try{const items=JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)),'builtin-products.json'),'utf8'));return new Map((Array.isArray(items)?items:[]).map(x=>[String(x.id),x]));}catch(e){console.error('[D25] Failed to load bundled catalog map:',e.message);return new Map();}})();
+const builtinCatalogById=(()=>{
+  const here=path.dirname(fileURLToPath(import.meta.url));
+  const candidates=[
+    path.join(here,'builtin-products.json'),
+    path.resolve(here,'../builtin-products.json'),
+    path.resolve(here,'../../data.js')
+  ];
+  for(const file of candidates){
+    try{
+      const raw=fs.readFileSync(file,'utf8').trim();
+      let items=[];
+      if(file.endsWith('.json')){
+        items=JSON.parse(raw);
+      }else{
+        const prefix='window.DEVA_DATA=';
+        const jsonText=raw.startsWith(prefix)?raw.slice(prefix.length).replace(/;\s*$/,''):raw;
+        const parsed=JSON.parse(jsonText);
+        items=Array.isArray(parsed)?parsed:(parsed.products||[]);
+      }
+      if(Array.isArray(items)&&items.length){
+        console.log(`[D48] Built-in catalog loaded: ${items.length} products from ${file}`);
+        return new Map(items.map(x=>[String(x.id),x]));
+      }
+    }catch(e){
+      console.error(`[D48] Catalog source failed (${file}):`,e.message);
+    }
+  }
+  console.error('[D48] No built-in catalog source could be loaded');
+  return new Map();
+})();
 const builtinCatalog=[...builtinCatalogById.values()];
 const builtinByCode=new Map(builtinCatalog.filter(x=>x.code).map(x=>[String(x.code),x]));
 const builtinByNameCategory=new Map(builtinCatalog.map(x=>[`${String(x.category||'').toLowerCase()}|${String(x.name||'').trim().toLowerCase()}`,x]));
 const moneyValue=v=>{const n=Number(String(v??'').replace(/[^0-9.]/g,''));return Number.isFinite(n)?n:0};
 const builtinForRow=row=>{if(!row)return null;return builtinCatalogById.get(String(row.id))||builtinByCode.get(String(row.product_code||''))||builtinByNameCategory.get(`${String(row.category||'').toLowerCase()}|${String(row.name||'').trim().toLowerCase()}`)||null};
-const canonicalProductId=id=>{const direct=builtinCatalogById.get(String(id));if(direct)return String(direct.id);const row=db.prepare('SELECT id,name,category,product_code FROM products WHERE id=?').get(String(id));const b=builtinForRow(row);return b?String(b.id):String(id)};
 
-const productTombstoneFor=(idOrCode)=>db.prepare('SELECT product_id,product_code,deleted_at FROM product_tombstones WHERE product_id=? OR product_code=? LIMIT 1').get(String(idOrCode||''),String(idOrCode||''));
-const deletedProductIds=()=>db.prepare('SELECT product_id,product_code,deleted_at FROM product_tombstones ORDER BY deleted_at DESC').all();
-function purgeDeletedBuiltinRows(){
-  const tombstones=deletedProductIds();
-  for(const t of tombstones){
-    if(t.product_id) db.prepare('DELETE FROM products WHERE id=?').run(String(t.product_id));
-    if(t.product_code) db.prepare('DELETE FROM products WHERE product_code=?').run(String(t.product_code));
+function catalogOverlayRows({activeOnly=false}={}){
+  const dbRows=db.prepare('SELECT * FROM products').all();
+  const byId=new Map(dbRows.map(r=>[String(r.id),r]));
+  const tombstones=new Set(db.prepare('SELECT product_id FROM product_tombstones').all().map(r=>String(r.product_id)));
+  const out=[];
+  const seen=new Set();
+  for(const b of builtinCatalog){
+    const id=String(b.id);
+    if(tombstones.has(id)) continue;
+    const r=byId.get(id)||null;
+    const active=r?Number(r.active)!==0:true;
+    if(activeOnly&&!active) continue;
+    out.push({
+      id,
+      name:String(b.name||r?.name||''),
+      category:String(b.category||r?.category||''),
+      price_usd:r?Number(r.price_usd||0):moneyValue(b.price),
+      old_price_usd:r?.old_price_usd??(b.oldPrice?moneyValue(b.oldPrice):null),
+      image:String(b.image||r?.image||''),
+      active:active?1:0,
+      stock_qty:Number(r?.stock_qty||0),
+      low_stock_threshold:Number(r?.low_stock_threshold??2),
+      product_code:String(b.code||r?.product_code||''),
+      images_json:r?.images_json||JSON.stringify(Array.isArray(b.images)?b.images:(b.image?[b.image]:[])),
+      catalog_origin:'BUILTIN',
+      updated_at:r?.updated_at||null
+    });
+    seen.add(id);
   }
-  return tombstones.length;
+  for(const r of dbRows){
+    const id=String(r.id);
+    if(seen.has(id)||tombstones.has(id)) continue;
+    if(activeOnly&&Number(r.active)===0) continue;
+    out.push(r);
+  }
+  return out.sort((a,b)=>Number(a.product_code||999999)-Number(b.product_code||999999));
 }
+const canonicalProductId=id=>{const direct=builtinCatalogById.get(String(id));if(direct)return String(direct.id);const row=db.prepare('SELECT id,name,category,product_code FROM products WHERE id=?').get(String(id));const b=builtinForRow(row);return b?String(b.id):String(id)};
 
 function repairCatalogDuplicates(context='request'){
   let removed=0,created=0,repaired=0;
   const tx=db.transaction(()=>{
     for(const b of builtinCatalog){
       const code=String(b.code||'');
-      if(productTombstoneFor(String(b.id))||productTombstoneFor(code)){
-        db.prepare('DELETE FROM products WHERE id=? OR product_code=?').run(String(b.id),code);
-        continue;
-      }
       const rows=db.prepare(`SELECT * FROM products WHERE id=? OR product_code=? OR (lower(name)=lower(?) AND category=?) ORDER BY CASE WHEN id=? THEN 0 WHEN product_code=? THEN 1 ELSE 2 END, datetime(updated_at) DESC, rowid DESC`).all(String(b.id),code,String(b.name),String(b.category),String(b.id),code);
       let canonical=rows.find(r=>String(r.id)===String(b.id));
       const source=canonical||rows[0]||null;
@@ -184,8 +263,6 @@ function ensureBuiltinProductRow(requestedId){
   }
   if(!builtin)return raw;
   const id=String(builtin.id);
-  const tombstone=productTombstoneFor(id)||productTombstoneFor(String(builtin.code||''));
-  if(tombstone){const err=new Error('Product was deleted');err.code='PRODUCT_DELETED';throw err;}
   const existing=db.prepare('SELECT * FROM products WHERE id=?').get(id);
   if(!existing){
     db.prepare(`INSERT INTO products(id,name,category,price_usd,old_price_usd,image,active,stock_qty,low_stock_threshold,product_code,images_json,catalog_origin,updated_at)
@@ -200,51 +277,25 @@ function ensureBuiltinProductRow(requestedId){
   }
   return id;
 }
-function syncBuiltinCatalog({ onlyWhenEmpty = false } = {}) {
-  const count = Number(
-    db.prepare('SELECT count(*) AS n FROM products').get()?.n || 0
-  );
 
-  if (onlyWhenEmpty && count > 0) {
-    return { inserted: 0, updated: 0 };
-  }
-
-  let inserted = 0;
-  let updated = 0;
-
-  for (const item of builtinCatalog) {
-    const id = String(item.id);
-    const existing = db.prepare(
-      'SELECT id FROM products WHERE id=?'
-    ).get(id);
-
-    ensureBuiltinProductRow(id);
-
-    if (existing) {
-      updated++;
-    } else {
-      inserted++;
-    }
-  }
-
-  return { inserted, updated };
-}
 // One-time D27 recovery for older patches that accidentally left built-in products inactive.
 try{
   const key='d27_builtin_active_recovery';
   if(!db.prepare('SELECT 1 FROM app_meta WHERE key=?').get(key)){
+    const count=Number(db.prepare('SELECT count(*) n FROM products').get()?.n||0);
+    if(count===0) db.prepare('DELETE FROM product_tombstones').run();
     syncBuiltinCatalog({onlyWhenEmpty:false});
     for(const b of builtinCatalog){
-      if(productTombstoneFor(String(b.id))||productTombstoneFor(String(b.code||'')))continue;
+      if(db.prepare('SELECT 1 FROM product_tombstones WHERE product_id=?').get(String(b.id))) continue;
       ensureBuiltinProductRow(String(b.id));
       db.prepare("UPDATE products SET active=1 WHERE id=?").run(String(b.id));
     }
-    purgeDeletedBuiltinRows();
     db.prepare(`INSERT INTO app_meta(key,value,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP`).run(key,String(builtinCatalog.length));
     console.log(`[D27] Recovered ${builtinCatalog.length} built-in products and categories`);
   }
 }catch(e){console.error('[D27] built-in active recovery failed:',e.message)}
 app.get('/api/admin/products/next-code',requireAdmin,(_req,res)=>res.json({product_code:nextProductCode()}));
+app.get('/api/admin/products/tombstones',requireAdmin,(_req,res)=>res.json(db.prepare('SELECT product_id FROM product_tombstones').all().map(x=>String(x.product_id))));
 function ensureCatalogProducts(context='request'){
   let count=Number(db.prepare('SELECT count(*) n FROM products').get()?.n||0);
   if(count===0){
@@ -256,58 +307,22 @@ function ensureCatalogProducts(context='request'){
       console.error(`[D16] Catalog self-heal failed (${context}):`,e.message);
     }
   }
-  purgeDeletedBuiltinRows();
-  count=Number(db.prepare('SELECT count(*) n FROM products').get()?.n||0);
   return count;
 }
-
-// D33: price override layer. Discount price is stored separately from catalog identity
-// so catalog repair/reseed can never erase the Admin-entered old price.
-function savePriceOverride(productId, priceUsd, oldPriceUsd){
-  const id=String(productId);
-  const price=Number(priceUsd||0);
-  const oldRaw=Number(oldPriceUsd||0);
-  const old=Number.isFinite(oldRaw)&&oldRaw>0?oldRaw:null;
-  db.prepare(`INSERT INTO product_price_overrides(product_id,price_usd,old_price_usd,updated_at)
-    VALUES(?,?,?,CURRENT_TIMESTAMP)
-    ON CONFLICT(product_id) DO UPDATE SET price_usd=excluded.price_usd,old_price_usd=excluded.old_price_usd,updated_at=CURRENT_TIMESTAMP`).run(id,price,old);
-  return {price_usd:price,old_price_usd:old};
-}
-function productRowsWithPriceOverrides(whereSql=''){
-  return db.prepare(`SELECT p.*,
-    COALESCE(o.price_usd,p.price_usd) AS price_usd,
-    COALESCE(o.old_price_usd,p.old_price_usd) AS old_price_usd
-    FROM products p LEFT JOIN product_price_overrides o ON o.product_id=p.id
-    ${whereSql}`).all();
-}
-app.get('/api/product-tombstones',(_req,res)=>{res.set('Cache-Control','no-store');res.json(deletedProductIds())});
-app.get('/api/admin/product-tombstones',requireAdmin,(_req,res)=>{res.set('Cache-Control','no-store');res.json(deletedProductIds())});
-app.get('/api/products',(req,res)=>{ensureCatalogProducts('public-products');try{repairCatalogDuplicates('public-products')}catch(e){console.error('[D25] public duplicate repair failed:',e.message)}res.set('X-DEVA-Catalog-Version','D25-single-identity');res.set('Cache-Control','no-store, no-cache, must-revalidate');res.json(productRowsWithPriceOverrides('WHERE p.active=1 ORDER BY CAST(p.product_code AS INTEGER), p.updated_at DESC'))});
-app.post('/api/admin/products/upload',requireAdmin,requireCsrf,allowPermission('products.write'),productUpload.single('productImage'),(req,res)=>{const parsed=z.object({id:z.string().min(1).max(80),name:z.string().min(1).max(150),category:z.string().min(1).max(80),price_usd:z.coerce.number().nonnegative(),old_price_usd:z.coerce.number().nonnegative().optional().default(0),image:z.string().max(500).optional().default(''),active:z.enum(['true','false']).optional().default('true'),stock_qty:z.coerce.number().int().min(0).max(100000).optional().default(0),low_stock_threshold:z.coerce.number().int().min(0).max(100000).optional().default(2)}).safeParse(req.body);if(!parsed.success){if(req.file)try{fs.unlinkSync(req.file.path)}catch{}return res.status(400).json({error:'زانیاریی بەرهەمەکە تەواو بکە'});}const x=parsed.data;db.prepare('DELETE FROM product_tombstones WHERE product_id=?').run(String(x.id));const previous=db.prepare('SELECT image,product_code FROM products WHERE id=?').get(x.id);const productCode=previous?.product_code||nextProductCode();const image=req.file?`/uploads/products/${req.file.filename}`:x.image;db.prepare(`INSERT INTO products(id,name,category,price_usd,old_price_usd,image,active,stock_qty,low_stock_threshold,product_code,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,price_usd=excluded.price_usd,old_price_usd=excluded.old_price_usd,image=excluded.image,active=excluded.active,stock_qty=excluded.stock_qty,low_stock_threshold=excluded.low_stock_threshold,updated_at=CURRENT_TIMESTAMP`).run(x.id,x.name,x.category,x.price_usd,x.old_price_usd||null,image,x.active==='true'?1:0,x.stock_qty,x.low_stock_threshold,productCode);savePriceOverride(x.id,x.price_usd,x.old_price_usd);if(req.file&&previous?.image&&previous.image!==image){const oldName=String(previous.image).split('/').pop();if(oldName)try{fs.unlinkSync(path.join(productUploadDir,oldName))}catch{}}audit(req,'PRODUCT_SAVED',x.id,{name:x.name,imageUploaded:!!req.file});res.json({ok:true,id:x.id,image,product_code:productCode});});
+app.get('/api/products',(req,res)=>{ensureCatalogProducts('public-products');try{repairCatalogDuplicates('public-products')}catch(e){console.error('[D25] public duplicate repair failed:',e.message)}const rows=catalogOverlayRows({activeOnly:true});res.set('X-DEVA-Catalog-Version','D45-overlay-155');res.set('X-DEVA-Product-Count',String(rows.length));res.set('Cache-Control','no-store, no-cache, must-revalidate');res.json(rows)});
+app.post('/api/admin/products/upload',allowPermission('products.write'),productUpload.single('productImage'),(req,res)=>{const parsed=z.object({id:z.string().min(1).max(80),name:z.string().min(1).max(150),category:z.string().min(1).max(80),price_usd:z.coerce.number().nonnegative(),old_price_usd:z.coerce.number().nonnegative().optional().default(0),image:z.string().max(500).optional().default(''),active:z.enum(['true','false']).optional().default('true'),stock_qty:z.coerce.number().int().min(0).max(100000).optional().default(0),low_stock_threshold:z.coerce.number().int().min(0).max(100000).optional().default(2)}).safeParse(req.body);if(!parsed.success){if(req.file)try{fs.unlinkSync(req.file.path)}catch{}return res.status(400).json({error:'زانیاریی بەرهەمەکە تەواو بکە'});}const x=parsed.data;const previous=db.prepare('SELECT image,product_code FROM products WHERE id=?').get(x.id);const productCode=previous?.product_code||nextProductCode();const image=req.file?`/uploads/products/${req.file.filename}`:x.image;db.prepare(`INSERT INTO products(id,name,category,price_usd,old_price_usd,image,active,stock_qty,low_stock_threshold,product_code,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,price_usd=excluded.price_usd,old_price_usd=excluded.old_price_usd,image=excluded.image,active=excluded.active,stock_qty=excluded.stock_qty,low_stock_threshold=excluded.low_stock_threshold,updated_at=CURRENT_TIMESTAMP`).run(x.id,x.name,x.category,x.price_usd,x.old_price_usd||null,image,x.active==='true'?1:0,x.stock_qty,x.low_stock_threshold,productCode);if(req.file&&previous?.image&&previous.image!==image){const oldName=String(previous.image).split('/').pop();if(oldName)try{fs.unlinkSync(path.join(productUploadDir,oldName))}catch{}}audit(req,'PRODUCT_SAVED',x.id,{name:x.name,imageUploaded:!!req.file});res.json({ok:true,id:x.id,image,product_code:productCode});});
 app.get('/api/admin/products',requireAdmin,(req,res)=>{
-  let total=ensureCatalogProducts('admin-products');
-  purgeDeletedBuiltinRows();
+  ensureCatalogProducts('admin-products');
   try{repairCatalogDuplicates('admin-products')}catch(e){console.error('[D25] admin duplicate repair failed:',e.message)}
-  let rows=productRowsWithPriceOverrides('ORDER BY CAST(p.product_code AS INTEGER), p.updated_at DESC');
-  if(rows.length===0){
-    try{
-      const forced=syncBuiltinCatalog({onlyWhenEmpty:false});
-      rows=productRowsWithPriceOverrides('ORDER BY CAST(p.product_code AS INTEGER), p.updated_at DESC');
-      total=rows.length;
-      console.log(`[D18] Forced bundled catalog restore: inserted=${forced.inserted||0}, total=${total}, source=${forced.file||'n/a'}`);
-    }catch(e){
-      console.error('[D18] Forced bundled catalog restore failed:',e);
-      return res.status(500).json({error:'Product catalog restore failed',detail:String(e?.message||e)});
-    }
-  }
-  res.set('X-DEVA-Product-Count',String(total));
-  res.set('X-DEVA-Catalog-Version','D18-bundled-155');
+  const rows=catalogOverlayRows({activeOnly:false});
+  res.set('X-DEVA-Product-Count',String(rows.length));
+  res.set('X-DEVA-Catalog-Version','D45-overlay-155');
   res.set('Cache-Control','no-store, no-cache, must-revalidate');
   res.json(rows);
 });
 app.post('/api/admin/products/catalog-sync',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res)=>{try{const result=syncBuiltinCatalog({onlyWhenEmpty:false});audit(req,'PRODUCT_CATALOG_SYNC','builtin',{inserted:result.inserted,total:result.total});res.json(result)}catch(e){console.error('Catalog sync failed:',e);res.status(500).json({error:'Catalog sync failed'})}});
-app.post('/api/admin/products',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res)=>{const s=z.object({id:z.string().min(1).max(80),name:z.string().min(1).max(150),category:z.string().min(1).max(80),price_usd:z.number().nonnegative(),old_price_usd:z.number().nonnegative().optional().default(0),image:z.string().max(500).optional().default(''),active:z.boolean().optional().default(true),stock_qty:z.number().int().min(0).max(100000).optional().default(0),low_stock_threshold:z.number().int().min(0).max(100000).optional().default(2)}).safeParse(req.body);if(!s.success)return res.status(400).json({error:s.error.flatten()});const p=s.data;const existingProduct=db.prepare('SELECT product_code FROM products WHERE id=?').get(p.id);const canonicalCode=repairBuiltinIdentity(p.id);const product_code=canonicalCode||existingProduct?.product_code||nextProductCode();db.prepare(`INSERT INTO products(id,name,category,price_usd,old_price_usd,image,active,stock_qty,low_stock_threshold,product_code,updated_at) VALUES(@id,@name,@category,@price_usd,@old_price_usd,@image,@active,@stock_qty,@low_stock_threshold,@product_code,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET name=@name,category=@category,price_usd=@price_usd,old_price_usd=@old_price_usd,image=@image,active=@active,stock_qty=@stock_qty,low_stock_threshold=@low_stock_threshold,product_code=@product_code,updated_at=CURRENT_TIMESTAMP`).run({...p,active:p.active?1:0,product_code});savePriceOverride(p.id,p.price_usd,p.old_price_usd);audit(req,'PRODUCT_SAVED',p.id,{name:p.name,product_code});res.json({ok:true,product_code})});
-app.patch('/api/admin/products/:id/price',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res)=>{
+app.post('/api/admin/products',allowPermission('products.write'),(req,res)=>{const s=z.object({id:z.string().min(1).max(80),name:z.string().min(1).max(150),category:z.string().min(1).max(80),price_usd:z.number().nonnegative(),old_price_usd:z.number().nonnegative().optional().default(0),image:z.string().max(500).optional().default(''),active:z.boolean().optional().default(true),stock_qty:z.number().int().min(0).max(100000).optional().default(0),low_stock_threshold:z.number().int().min(0).max(100000).optional().default(2)}).safeParse(req.body);if(!s.success)return res.status(400).json({error:s.error.flatten()});const p=s.data;const existingProduct=db.prepare('SELECT product_code FROM products WHERE id=?').get(p.id);const canonicalCode=repairBuiltinIdentity(p.id);const product_code=canonicalCode||existingProduct?.product_code||nextProductCode();db.prepare(`INSERT INTO products(id,name,category,price_usd,old_price_usd,image,active,stock_qty,low_stock_threshold,product_code,updated_at) VALUES(@id,@name,@category,@price_usd,@old_price_usd,@image,@active,@stock_qty,@low_stock_threshold,@product_code,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET name=@name,category=@category,price_usd=@price_usd,old_price_usd=@old_price_usd,image=@image,active=@active,stock_qty=@stock_qty,low_stock_threshold=@low_stock_threshold,product_code=@product_code,updated_at=CURRENT_TIMESTAMP`).run({...p,active:p.active?1:0,product_code});audit(req,'PRODUCT_SAVED',p.id,{name:p.name,product_code});res.json({ok:true,product_code})});
+app.patch('/api/admin/products/:id/price',allowPermission('products.write'),(req,res)=>{
   const parsed=z.object({price_usd:z.coerce.number().nonnegative(),old_price_usd:z.coerce.number().nonnegative().optional().default(0)}).safeParse(req.body);
   if(!parsed.success)return res.status(400).json({error:'نرخەکە دروست بنووسە'});
   const requestedId=String(req.params.id);
@@ -316,45 +331,27 @@ app.patch('/api/admin/products/:id/price',requireAdmin,requireCsrf,allowPermissi
     const before=db.prepare('SELECT id,name,category,image,product_code,active FROM products WHERE id=?').get(targetId);
     if(!before)return res.status(404).json({error:'Product not found',requestedId});
     const p=parsed.data;
-    const oldPrice=Number(p.old_price_usd);const storedOldPrice=Number.isFinite(oldPrice)&&oldPrice>0?oldPrice:null;const updateInfo=db.prepare('UPDATE products SET price_usd=?,old_price_usd=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(Number(p.price_usd),storedOldPrice,targetId);if(!updateInfo.changes)return res.status(404).json({error:'Product not found'});savePriceOverride(targetId,p.price_usd,p.old_price_usd);
-    const after=db.prepare(`SELECT p.id,p.name,p.category,p.image,p.product_code,p.active,COALESCE(o.price_usd,p.price_usd) price_usd,COALESCE(o.old_price_usd,p.old_price_usd) old_price_usd FROM products p LEFT JOIN product_price_overrides o ON o.product_id=p.id WHERE p.id=?`).get(targetId);if(Number(after.price_usd)!==Number(p.price_usd)||Number(after.old_price_usd||0)!==Number(storedOldPrice||0))return res.status(500).json({error:'Price verification failed'});
+    db.prepare('UPDATE products SET price_usd=?,old_price_usd=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(p.price_usd,p.old_price_usd||null,targetId);
+    const after=db.prepare('SELECT id,name,category,image,product_code,price_usd,old_price_usd,active FROM products WHERE id=?').get(targetId);
     audit(req,'PRODUCT_PRICE_UPDATED',targetId,{requestedId,price_usd:p.price_usd,old_price_usd:p.old_price_usd,product_code:after.product_code});
     res.json({ok:true,id:targetId,product_code:after.product_code,price_usd:after.price_usd,old_price_usd:after.old_price_usd||0,identityPreserved:before.name===after.name&&before.category===after.category&&before.image===after.image&&before.product_code===after.product_code});
-  }catch(e){console.error('[D29] price update failed:',e);if(e?.code==='PRODUCT_DELETED')return res.status(410).json({error:'Product was deleted — restore it before editing price'});res.status(500).json({error:'Price update failed',detail:String(e?.message||e)})}
+  }catch(e){console.error('[D27] price update failed:',e);res.status(500).json({error:'Price update failed',detail:String(e?.message||e)})}
 });
 // Compatibility route for older Admin builds: PATCH /api/admin/products/:id with price fields.
-app.patch('/api/admin/products/:id',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res,next)=>{
+app.patch('/api/admin/products/:id',allowPermission('products.write'),(req,res,next)=>{
   if(req.body && ('price_usd' in req.body || 'old_price_usd' in req.body)){
     const parsed=z.object({price_usd:z.coerce.number().nonnegative(),old_price_usd:z.coerce.number().nonnegative().optional().default(0)}).safeParse(req.body);
     if(!parsed.success)return res.status(400).json({error:'نرخەکە دروست بنووسە'});
     const targetId=ensureBuiltinProductRow(String(req.params.id));
     const row=db.prepare('SELECT id,product_code FROM products WHERE id=?').get(targetId);
     if(!row)return res.status(404).json({error:'Product not found'});
-    const compatOld=Number(parsed.data.old_price_usd)>0?Number(parsed.data.old_price_usd):null;db.prepare('UPDATE products SET price_usd=?,old_price_usd=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(Number(parsed.data.price_usd),compatOld,targetId);savePriceOverride(targetId,parsed.data.price_usd,parsed.data.old_price_usd);
-    return res.json({ok:true,id:targetId,product_code:row.product_code,price_usd:Number(parsed.data.price_usd),old_price_usd:compatOld||0});
+    db.prepare('UPDATE products SET price_usd=?,old_price_usd=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(parsed.data.price_usd,parsed.data.old_price_usd||null,targetId);
+    return res.json({ok:true,id:targetId,product_code:row.product_code});
   }
   next();
 });
-app.patch('/api/admin/products/:id/active',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res)=>{const active=!!req.body?.active;const info=db.prepare('UPDATE products SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(active?1:0,req.params.id);if(!info.changes)return res.status(404).json({error:'Product not found'});audit(req,active?'PRODUCT_ENABLED':'PRODUCT_DISABLED',req.params.id);res.json({ok:true,active});});
-app.delete('/api/admin/products/:id',requireAdmin,requireCsrf,allowPermission('products.delete'),(req,res)=>{
-  const requestedId=String(req.params.id);
-  db.prepare('DELETE FROM product_price_overrides WHERE product_id=?').run(requestedId);
-  const row=db.prepare('SELECT id,image,product_code,catalog_origin FROM products WHERE id=?').get(requestedId);
-  const builtin=builtinCatalogById.get(requestedId)||builtinForRow(row);
-  const canonicalId=String(builtin?.id||row?.id||requestedId);
-  const canonicalCode=String(builtin?.code||row?.product_code||'');
-  // A tombstone is required for built-in catalog items, otherwise data.js/self-heal would re-create them.
-  if(builtin){
-    db.prepare(`INSERT INTO product_tombstones(product_id,product_code,deleted_by,deleted_at) VALUES(?,?,?,CURRENT_TIMESTAMP)
-      ON CONFLICT(product_id) DO UPDATE SET product_code=excluded.product_code,deleted_by=excluded.deleted_by,deleted_at=CURRENT_TIMESTAMP`)
-      .run(canonicalId,canonicalCode||null,req.admin?.email||null);
-  }
-  const image=row?.image;
-  db.prepare("DELETE FROM products WHERE id=? OR (?<>'' AND product_code=?)").run(canonicalId,canonicalCode,canonicalCode);
-  if(image&&String(image).startsWith('/uploads/products/')){const oldName=String(image).split('/').pop();if(oldName)try{fs.unlinkSync(path.join(productUploadDir,oldName))}catch{}}
-  audit(req,'PRODUCT_DELETED',canonicalId,{product_code:canonicalCode,builtin:!!builtin});
-  res.status(204).end();
-});
+app.patch('/api/admin/products/:id/active',allowPermission('products.write'),(req,res)=>{const active=!!req.body?.active;const info=db.prepare('UPDATE products SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(active?1:0,req.params.id);if(!info.changes)return res.status(404).json({error:'Product not found'});audit(req,active?'PRODUCT_ENABLED':'PRODUCT_DISABLED',req.params.id);res.json({ok:true,active});});
+app.delete('/api/admin/products/:id',allowPermission('products.delete'),(req,res)=>{const row=db.prepare('SELECT image FROM products WHERE id=?').get(req.params.id);if(!row)return res.status(404).json({error:'Product not found'});db.prepare('DELETE FROM products WHERE id=?').run(req.params.id);if(row.image&&String(row.image).startsWith('/uploads/products/')){const oldName=String(row.image).split('/').pop();if(oldName)try{fs.unlinkSync(path.join(productUploadDir,oldName))}catch{}}audit(req,'PRODUCT_DELETED',req.params.id);res.status(204).end()});
 const normalizeCustomerPhone=v=>String(v||'').replace(/[^0-9+]/g,'').replace(/^00964/,'+964').replace(/^964/,'+964');
 
 // Customer accounts for the native DEVA app and cross-device sync.
