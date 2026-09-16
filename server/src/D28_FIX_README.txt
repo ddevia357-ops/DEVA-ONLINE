@@ -1,0 +1,1 @@
+D28: fixes previous-price discount persistence. Current price and old price are saved atomically and verified; storefront renders old price + current price + discount when old price is greater. Design/images/categories unchanged.

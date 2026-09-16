@@ -1,0 +1,5 @@
+DEVA backend changes for iOS Build 17
+- POST /api/orders creates a real PENDING/UNPAID showroom order from the native app.
+- GET /api/orders/:id/status?phone=... lets the app securely track its own guest order using order id + matching phone.
+- Existing Admin Orders screen can manage these orders and update status.
+- Existing DEVA Rewards public/activation APIs are used by the app.

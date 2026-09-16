@@ -1,0 +1,1 @@
+D32: bundled catalog renders immediately; API only overlays prices/stock and can never blank the showroom. Render port fix from D31 preserved.

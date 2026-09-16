@@ -1,0 +1,5 @@
+DEVA D48
+builtin products: 155
+Expected Render logs:
+[D48] LIVE PRODUCT SCHEMA OK
+[D48] Built-in catalog loaded: 155 products ...

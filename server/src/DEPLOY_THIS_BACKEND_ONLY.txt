@@ -1,0 +1,15 @@
+DEVA D35 BACKEND ONLY
+
+Upload these files/folders to the ROOT of the DEVA-ONLINE GitHub repository preserving paths:
+- package.json
+- server/src/*
+
+Important: server/src/server.js contains:
+- GET /api/build-version -> build D35
+- PATCH /api/admin/products/:id/price
+- PATCH /api/admin/products/:id/active
+- DELETE /api/admin/products/:id
+
+After committing, in Render use Clear build cache & deploy.
+Then open: https://devafurnitureerbil.com/api/build-version
+Expected JSON includes: "build":"D35"

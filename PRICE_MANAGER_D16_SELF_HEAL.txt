@@ -1,0 +1,12 @@
+DEVA D16 PRODUCT MANAGER SELF-HEAL
+
+Root cause fix:
+- Admin product GET no longer trusts seed markers or browser auto-sync.
+- Every /api/admin/products request checks the real SQLite products table.
+- If and only if count(*) == 0, the server restores the built-in data.js catalog.
+- Existing Admin edits are never overwritten because recovery only runs on an empty table and uses INSERT OR IGNORE.
+- Public /api/products has the same empty-table self-heal.
+- Admin product responses are no-store and include X-DEVA-Product-Count for diagnosis.
+- Search continues to support product name, code, and id.
+
+Expected after deploy: Product Manager should show the built-in catalog instead of (0).

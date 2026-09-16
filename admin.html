@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ku" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#6b4a2d">
+  <meta name="deva-build" content="D27">
+  <title>DEVA Professional Admin</title>
+  <link rel="stylesheet" href="admin.css?v=20260818-d27-price-category-stable">
+</head>
+<body>
+  <section id="login" class="login-shell">
+    <div class="login-card">
+      <div class="brand-mark">D</div>
+      <h1>DEVA Admin</h1>
+      <p>چوونەژوورەوەی پارێزراو</p>
+      <form id="loginForm">
+        <label>ئیمەیڵ<input id="email" type="email" autocomplete="username" required></label>
+        <label>وشەی نهێنی<input id="password" type="password" autocomplete="current-password" required minlength="8"></label>
+        <label id="codeWrap" hidden>کۆدی 2FA<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+        <button class="primary">چوونەژوورەوە</button>
+      </form>
+      <div id="msg" class="form-message"></div>
+    </div>
+  </section>
+
+  <section id="panel" class="app-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand"><div class="brand-mark small">D</div><div><b>DEVA</b><small>Management System</small></div></div>
+      <nav class="side-nav">
+        <button data-tab="overviewTab" class="active"><span>⌂</span> پوختە</button>
+        <button data-tab="analyticsTab"><span>⌁</span> Analytics</button>
+        <button data-tab="productsTab"><span>▦</span> بەرهەمەکان</button>
+        <button data-tab="ordersTab"><span>▣</span> داواکارییەکان</button>
+        <button data-tab="giftsTab"><span>★</span> دیاریی مانگانە</button>
+        <button data-tab="rewardsTab"><span>🎁</span> DEVA Rewards</button>
+        <button data-tab="adsTab"><span>📢</span> ڕیکلام و Sponsor</button>
+        <button data-tab="securityTab" class="super-only"><span>◈</span> Security Center</button>
+        <button data-tab="adminsTab" class="super-only"><span>♙</span> Admin ـەکان</button>
+        <button data-tab="logsTab" class="super-only"><span>≡</span> Audit Log</button>
+        <button data-tab="settingsTab"><span>⚙</span> ڕێکخستن</button>
+      </nav>
+      <div class="sidebar-footer"><div id="who"></div><button id="logout" class="ghost danger-text">دەرچوون</button></div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-title"><button id="menuToggle" class="icon-btn mobile-only" aria-label="مێنیو">☰</button><div><h1 id="pageTitle">پوختە</h1><p id="todayText"></p></div></div>
+        <div class="topbar-actions">
+          <button id="themeToggle" class="icon-btn" aria-label="گۆڕینی ڕەنگ">☾</button>
+          <div class="notification-wrap">
+            <button id="notificationBtn" class="icon-btn" aria-label="ئاگادارکردنەوە">🔔<span id="notificationCount" class="badge" hidden>0</span></button>
+            <div id="notificationPanel" class="notification-panel" hidden><div class="panel-head"><b>ئاگادارکردنەوەکان</b><button id="closeNotifications" class="ghost">×</button></div><div id="liveNotifications"></div></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <div id="notice"></div>
+
+        <section id="overviewTab" class="tab">
+          <div class="hero-row"><div><h2>بەخێربێیتەوە</h2><p>پوختەی ئەمڕۆی فرۆشتن و چالاکییەکانت.</p></div><button id="refreshDashboard" class="secondary">نوێکردنەوە</button></div>
+          <div class="stats-grid">
+            <article class="stat-card"><span>بەرهەم</span><strong id="statProducts">0</strong><small>هەموو بەرهەمەکان</small></article>
+            <article class="stat-card"><span>داواکاری</span><strong id="statOrders">0</strong><small>هەموو داواکارییەکان</small></article>
+            <article class="stat-card"><span>داواکاریی نوێ</span><strong id="statPending">0</strong><small>چاوەڕوانی پەسەندکردن</small></article>
+            <article class="stat-card"><span>2FA</span><strong id="stat2fa">—</strong><small id="statRole">—</small></article><article class="stat-card"><span>Stock کەم</span><strong id="statLowStock">0</strong><small>پێویستی بە داواکاری</small></article><article class="stat-card"><span>Sold Out</span><strong id="statOutStock">0</strong><small>بەرهەمی بەتاڵ</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel-card chart-card"><div class="section-head"><div><h3>جوڵەی داواکاری</h3><p>٧ ڕۆژی کۆتایی</p></div></div><canvas id="ordersChart" height="240"></canvas></section>
+            <section class="panel-card"><div class="section-head"><div><h3>دۆخی داواکارییەکان</h3><p>دابەشبوون بە پێی دۆخ</p></div></div><div id="statusBreakdown" class="status-list"></div></section>
+          </div>
+
+          <section class="panel-card"><div class="section-head"><div><h3>Quick Actions</h3><p>کردارە زۆر بەکارهاتووەکان</p></div></div><div class="quick-actions"><button data-quick="productsTab">＋ بەرهەمی نوێ</button><button data-quick="ordersTab">▣ داواکارییەکان</button><button data-quick="giftsTab">★ دیاریی مانگانە</button><button data-quick="rewardsTab">🎁 DEVA Rewards</button><button data-quick="adsTab">📢 ڕیکلام</button><button data-quick="settingsTab">⚙ ڕێکخستن</button></div></section>
+          <section class="panel-card"><div class="section-head"><div><h3>چالاکییە نوێکان</h3><p>دوا داواکاری و گۆڕانکارییەکان</p></div></div><div id="recentOverview"></div></section>
+        </section>
+
+        <section id="analyticsTab" class="tab" hidden>
+          <div class="section-head"><div><h2>Analytics</h2><p>ئاماری سەردان، داواکاری و فرۆشتن</p></div><div class="toolbar"><select id="analyticsDays"><option value="7">7 ڕۆژ</option><option value="30" selected>30 ڕۆژ</option><option value="90">90 ڕۆژ</option></select><button id="refreshAnalytics">نوێکردنەوە</button></div></div>
+          <div class="stats-grid analytics-stats">
+            <article class="stat-card"><span>سەردانی ئەمڕۆ</span><strong id="aTodayVisits">0</strong><small id="aTodayVisitors">0 کەسی جیاواز</small></article>
+            <article class="stat-card"><span>هەموو سەردان</span><strong id="aVisits">0</strong><small id="aUniqueVisitors">0 کەسی جیاواز</small></article>
+            <article class="stat-card"><span>فرۆشتن</span><strong id="aSales">0</strong><small>داواکاری پارەدراو/گەیەنراو</small></article>
+            <article class="stat-card"><span>داهاتی USD</span><strong id="aRevenue">$0</strong><small id="aPending">0 داواکاری چاوەڕوان</small></article>
+          </div>
+          <div class="dashboard-grid">
+            <section class="panel-card chart-card"><div class="section-head"><div><h3>سەردان و داواکاری</h3><p>بەپێی ڕۆژ</p></div></div><canvas id="analyticsChart" height="260"></canvas></section>
+            <section class="panel-card"><div class="section-head"><div><h3>پەڕە زۆر بینراوەکان</h3><p>Top Pages</p></div></div><div id="topPages"></div></section>
+          </div>
+          <section class="panel-card"><div class="section-head"><div><h3>بەرهەمە زۆر بینراوەکان</h3><p>Product Views</p></div></div><div id="topProducts"></div></section>
+        </section>
+
+        <section id="productsTab" class="tab" hidden>
+          <div class="section-head"><div><h2>📦 بەڕێوەبردنی بەرهەمەکان</h2><p>وێنە، ناو، بەش و نرخ زیاد بکە؛ بەرهەمەکە خۆکارانە لە ئەپ دەردەکەوێت.</p></div></div>
+          <div class="panel-card product-list-card product-list-prominent">
+            <div class="section-head"><div><h3>📋 بەرهەمەکان <span id="productCountBadge"></span></h3><p>ناو یان کۆدی بەرهەم بگەڕێ؛ نرخ و داشکاندن ڕاستەوخۆ لێرە بگۆڕە.</p></div><button type="button" id="refreshProductsBtn" class="secondary">↻ نوێکردنەوە</button></div>
+            <div class="price-manager-toolbar"><input id="productAdminSearch" type="search" placeholder="🔎 گەڕان بە ناو یان کۆد، بۆ نموونە 0001"><span id="productSearchCount" class="muted"></span></div>
+            <div id="products"><p class="muted">Loading products...</p></div>
+          </div>
+          <div class="product-manager-layout">
+            <form id="productForm" class="form-grid product-manager-form" enctype="multipart/form-data">
+              <div class="product-upload full">
+                <div class="product-preview" id="productPreview"><span>🖼️</span><small>وێنەی بەرهەم</small></div>
+                <label class="upload-btn">📷 وێنە هەڵبژێرە<input id="pfile" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>
+                <small class="muted">JPG / PNG / WEBP — تا 8MB</small>
+              </div>
+              <label class="product-code-field">کۆدی بەرهەم<input id="pcode" value="..." readonly aria-label="کۆدی بەرهەم"><small class="muted">خۆکارانە بە ڕیزبەندی زیاد دەبێت: 0001، 0002، 0003...</small></label>
+              <input id="pid" placeholder="Product ID (خۆکارانە ئەگەر بەتاڵ بێت)">
+              <input id="pname" placeholder="ناوی بەرهەم / Model" required>
+              <select id="pcat" required>
+                <option value="">بەش هەڵبژێرە</option><option value="sofa">قەنەفە</option><option value="bedroom">ژووری نووستن</option><option value="corner">قەنەفەی L</option><option value="tv">مێزی تەلەڤیزیۆن</option><option value="console">کۆنسۆل</option><option value="dining">مێزی نانخواردن</option><option value="coffee">مێزی ناوەڕاست</option><option value="door">دەرگا</option><option value="clock">کاتژمێری دیواری</option><option value="decor">دیکۆر</option>
+              </select>
+              <label>نرخی ئێستا ($)<input id="pprice" type="number" step="0.01" min="0" placeholder="نرخی نوێ / فرۆشتن" required></label>
+              <label>نرخی پێشوو ($) — بۆ داشکاندن<input id="poldprice" type="number" step="0.01" min="0" placeholder="بۆ نموونە 1960"></label>
+              <div id="pricePreview" class="full muted">نرخەکە بنووسە؛ ئەگەر نرخی پێشوو گەورەتر بێت، داشکاندن خۆکارانە پیشان دەدرێت.</div>
+              <input id="pstock" type="number" min="0" step="1" value="0" placeholder="ژمارەی Stock">
+              <input id="plowstock" type="number" min="0" step="1" value="2" placeholder="ئاگادارکردنەوە لە Stock کەم">
+              <input id="pimage" placeholder="Image URL / path (ئارەزوومەندانە)">
+              <label class="check-row"><input id="pactive" type="checkbox" checked> بەرهەم چالاک بێت</label>
+              <button class="primary full" id="productSaveBtn">＋ زیادکردنی بەرهەم</button>
+              <button type="button" class="full" id="productResetBtn" hidden>↩ گەڕانەوە بۆ بەرهەمی نوێ</button>
+              <button type="button" class="danger full" id="productDeleteBtn" hidden>🗑 سڕینەوەی ئەم بەرهەمە</button>
+            </form>
+          </div>
+        </section>
+        <section id="ordersTab" class="tab" hidden><div class="section-head"><div><h2>داواکارییەکان</h2><p>پشکنین و گۆڕینی دۆخی داواکاری</p></div></div></div><div class="panel-card"><div id="orders"></div></div></section>
+        <section id="securityTab" class="tab super-only" hidden><div class="section-head"><div><h2>Security Center</h2><p>چاودێری هەوڵە گوماناوییەکان و backup</p></div><div class="toolbar"><button id="refreshSecurity">نوێکردنەوە</button><button id="markAlerts">خوێندراوە</button><button id="createBackup">Backup</button></div></div><div class="stats-grid"><article class="stat-card"><span>Login هەڵە 24h</span><strong id="failed24h">0</strong></article><article class="stat-card"><span>Alert نەخوێندراو</span><strong id="alertsUnread">0</strong></article><article class="stat-card"><span>Admin چالاک</span><strong id="activeAdmins">0</strong></article><article class="stat-card"><span>2FA چالاک</span><strong id="enabled2fa">0</strong></article><article class="stat-card"><span>Admin قوفڵ</span><strong id="lockedAdmins">0</strong></article><article class="stat-card"><span>System</span><strong id="systemHealth">—</strong></article></div><div class="dashboard-grid"><section class="panel-card"><h3>Security Alerts</h3><div id="alerts"></div></section><section class="panel-card"><h3>Login Activity</h3><div id="securityRecent"></div></section></div><section class="panel-card"><h3>Backups</h3><p class="muted">Backup ـی ئۆتۆماتیکی بە پێی BACKUP_INTERVAL_HOURS دروست دەبێت. دەتوانیت backup ـەکان دابگریت.</p><div id="backups"></div></section><section class="panel-card"><h3>System Status</h3><div id="systemStatus" class="muted">Loading...</div></section></section>
+        <section id="adminsTab" class="tab super-only" hidden><div class="section-head"><div><h2>Admin ـەکان</h2><p>Role و مۆڵەتەکان</p></div></div><form id="adminForm" class="form-grid"><input id="aemail" type="email" placeholder="Admin Email" required><input id="apassword" type="password" minlength="14" placeholder="Password (14+)" required><select id="arole"><option>ADMIN</option><option>STAFF</option><option>SUPER_ADMIN</option></select><button class="primary">زیادکردنی Admin</button></form><div class="panel-card"><div id="admins"></div></div></section>
+        <section id="logsTab" class="tab super-only" hidden><div class="section-head"><div><h2>Audit Log</h2><p>تۆماری هەموو گۆڕانکارییەکان</p></div></div><div class="panel-card"><div id="logs"></div></div></section>
+        <section id="giftsTab" class="tab" hidden><div class="section-head"><div><h2>دیاریی مانگانە</h2><p>کەمپەین، بەژداربووان و براوە</p></div><button id="refreshGifts" type="button">نوێکردنەوە</button></div><form id="giftForm" class="form-grid"><input id="giftTitle" placeholder="ناونیشانی کەمپەین" required><input id="giftName" placeholder="ناوی دیاری" required><input id="giftImage" placeholder="لینکی وێنە"><textarea id="giftDescription" placeholder="وەسفی دیاری"></textarea><textarea id="giftTerms" placeholder="مەرجەکان"></textarea><label>دەستپێک<input id="giftStart" type="datetime-local" required></label><label>کۆتایی<input id="giftEnd" type="datetime-local" required></label><select id="giftStatus"><option value="DRAFT">DRAFT</option><option value="ACTIVE">ACTIVE</option><option value="CLOSED">CLOSED</option></select><button class="primary full">زیادکردنی دیاری</button></form><div class="dashboard-grid"><section class="panel-card"><h3>کەمپەینەکان</h3><div id="gifts"></div></section><section class="panel-card"><h3>بەژداربووان</h3><div id="giftEntries"></div></section></div></section>
+        
+        <section id="rewardsTab" class="tab" hidden>
+          <div class="section-head"><div><h2>🎁 DEVA Rewards Club</h2><p>Friday Gifts، QR Activation و Super Prize هەر ٣ مانگ</p></div><div class="toolbar"><button id="refreshRewards">نوێکردنەوە</button><button id="drawFridayNow">Draw Friday Gift</button><button id="drawGrandNow">👑 Draw Super Prize</button></div></div>
+          <div class="stats-grid"><article class="stat-card"><span>ئەندام</span><strong id="rMemberCount">0</strong></article><article class="stat-card"><span>ئامانج</span><strong id="rTarget">1000</strong></article><article class="stat-card"><span>ماوە</span><strong id="rRemaining">1000</strong></article><article class="stat-card"><span>دۆخ</span><strong id="rState">WAITING</strong></article></div><section class="panel-card reward-live-admin"><div class="section-head"><div><h3>🔴 Live Draw Room</h3><p>ژمارەی ڕاستەقینەی ئەوانەی ئێستا لە ئەپ و بەشی خەڵاتەکانن</p></div><strong id="adminDrawClock">هەینی • 9:00 شەو</strong></div><div class="stats-grid"><article class="stat-card"><span>Online لە ئەپ</span><strong id="rOnlineNow">0</strong></article><article class="stat-card"><span>لە DEVA Rewards</span><strong id="rRewardsNow">0</strong></article><article class="stat-card"><span>چاوەڕێی ڕاکێشان</span><strong id="rWaitingNow">0</strong></article><article class="stat-card"><span>کاتی داهاتوو</span><strong id="rLiveCountdown">--:--:--</strong></article></div></section>
+          <div class="dashboard-grid">
+            <section class="panel-card"><h3>QR ـی پێشانگا</h3><div class="rewards-admin-qr"><img id="rewardQrImage" alt="DEVA Rewards QR"><div><b>ئەم QR ـە لە پێشانگا چاپ بکە.</b><p class="muted">کریار QR سکان دەکات → ئەگەر هەژماری نییە خۆی تۆمار دەکات → پاش تۆمارکردن خۆکارانە دەبێتە ئەندامی DEVA Rewards.</p><div class="toolbar"><button id="printRewardQr" type="button">🖨 Print QR</button><a id="openRewardQr" class="button" href="/api/admin/rewards/qr.svg" target="_blank" rel="noopener">↗ Open QR</a></div></div></div></section>
+            <section class="panel-card"><h3>ڕێکخستن</h3><form id="rewardSettingsForm" class="reward-settings-grid"><label>Target Members<input id="rewardTargetInput" type="number" min="1" value="1000"></label><label>Friday Hour<input id="rewardHourInput" type="number" min="0" max="23" value="21"></label><label>Credit Expiry Days<input id="rewardExpiryInput" type="number" min="1" max="365" value="30"></label><label><span>System</span><span><input id="rewardEnabledInput" type="checkbox" checked> Active</span></label><button class="primary full" style="grid-column:1/-1">هەڵگرتنی ڕێکخستن</button></form></section>
+          </div>
+          <section class="panel-card"><div class="section-head"><div><h3>خەڵاتەکان</h3><p>Weight کەمتر = دەربڕینی کەمتر. Super Prize ـەکان TV Unit و 3-Piece Coffee Table Set ـن.</p></div></div><div id="adminRewardPrizes"></div></section>
+          <div class="dashboard-grid"><section class="panel-card"><h3>ئەندامان</h3><div id="adminRewardMembers"></div></section><section class="panel-card"><h3>ڕاکێشان و براوەکان</h3><div id="adminRewardDraws"></div></section></div>
+        </section>
+
+        <section id="adsTab" class="tab" hidden>
+          <div class="section-head"><div><h2>📢 ڕیکلام و Sponsor</h2><p>بەڕێوەبردنی ڕیکلامەکانی ناو ئەپ بدون دەستکاری کۆد</p></div><button id="refreshSponsors" type="button">نوێکردنەوە</button></div>
+          <div class="stats-grid"><article class="stat-card"><span>هەموو ڕیکلام</span><strong id="adTotal">0</strong></article><article class="stat-card"><span>چالاک ئێستا</span><strong id="adLive">0</strong></article><article class="stat-card"><span>Views</span><strong id="adViews">0</strong></article><article class="stat-card"><span>Clicks</span><strong id="adClicks">0</strong></article></div>
+          <form id="sponsorForm" class="form-grid">
+            <input id="sponsorId" type="hidden">
+            <input id="sponsorCompany" placeholder="ناوی کۆمپانیا / Sponsor" required maxlength="100">
+            <input id="sponsorTitle" placeholder="ناونیشانی ڕیکلام" required maxlength="160">
+            <textarea id="sponsorDescription" placeholder="وەسفی کورت"></textarea>
+            <input id="sponsorImage" placeholder="Image path / URL">
+            <input id="sponsorCta" placeholder="دەقی دوگمە" value="زیاتر ببینە">
+            <input id="sponsorUrl" placeholder="Website / Instagram URL">
+            <input id="sponsorWhatsapp" placeholder="WhatsApp number (optional)">
+            <label>شوێنی ڕیکلام<select id="sponsorPlacement"><option value="HOME">Home Premium Card</option><option value="PRODUCTS">نێوان بەرهەمەکان</option><option value="PARTNERS">DEVA Partners</option></select></label>
+            <label>دەستپێک<input id="sponsorStart" type="datetime-local" required></label>
+            <label>کۆتایی<input id="sponsorEnd" type="datetime-local" required></label>
+            <label class="check-row"><input id="sponsorActive" type="checkbox" checked> Active</label>
+            <div class="toolbar full"><button class="primary" type="submit" id="saveSponsor">هەڵگرتنی ڕیکلام</button><button type="button" id="clearSponsor">فۆرمی نوێ</button></div>
+          </form>
+          <section class="panel-card"><div class="section-head"><div><h3>کەمپەینەکان</h3><p>View/Click ـەکان بە شێوەی خۆکار تۆمار دەکرێن.</p></div></div><div id="sponsorList"></div></section>
+        </section>
+        <section id="settingsTab" class="tab" hidden><div class="section-head"><div><h2>ڕێکخستن</h2><p>پاراستن و session</p></div></div><div class="dashboard-grid"><section class="panel-card settings"><h3>Two-Factor Authentication</h3><p id="twoFactorState"></p><button id="setup2fa">چالاککردنی 2FA</button><div id="twoFactorSetup" hidden><p>Secret ـەکە لە Authenticator زیاد بکە:</p><code id="totpSecret"></code><input id="totpCode" inputmode="numeric" maxlength="6" placeholder="کۆدی 6 ژمارە"><button id="enable2fa">پشتڕاستکردنەوە</button></div></section><section class="panel-card settings"><h3>Session و Password</h3><button id="logoutAll" class="danger">دەرکردنی هەموو ئامێرەکان</button><form id="passwordForm"><input id="currentPassword" type="password" placeholder="Password ـی ئێستا" required><input id="newPassword" type="password" minlength="14" placeholder="Password ـی نوێ (14+)" required><button>گۆڕینی Password</button></form></section></div></section>
+      </main>
+    </div>
+  </section>
+  <div id="sidebarOverlay" class="sidebar-overlay" hidden></div>
+  <script src="data.js?v=20260818-d27-price-category-stable"></script><script src="admin.js?v=20260818-d27-price-category-stable"></script><script src="admin-rewards.js?v=20260818-d27-price-category-stable"></script><script src="admin-sponsors.js?v=20260818-d27-price-category-stable"></script>
+</body>
+</html>

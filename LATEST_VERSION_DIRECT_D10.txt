@@ -1,0 +1,1 @@
+DEVA D10: server build-version endpoint + automatic fresh-version check + BFCache bypass. Keeps design/features unchanged.

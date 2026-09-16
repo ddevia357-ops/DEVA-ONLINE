@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: deva-furniture-online
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "true"
+      - key: DATA_DIR
+        value: /var/data
+      - key: DB_PATH
+        value: /var/data/deva.sqlite
+      - key: UPLOAD_DIR
+        value: /var/data/uploads/products
+      - key: BACKUP_DIR
+        value: /var/data/backups
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ANALYTICS_SALT
+        generateValue: true
+      - key: REWARDS_QR_TOKEN
+        generateValue: true

@@ -1,0 +1,13 @@
+DEVA Product Manager - Final delete fix
+
+Verified:
+- Delete button is rendered for SUPER_ADMIN and ADMIN.
+- Delete click asks for confirmation.
+- DELETE /api/admin/products/:id exists.
+- products.delete permission exists for SUPER_ADMIN and ADMIN.
+- Uploaded product image is removed from persistent uploads when the product is deleted.
+- Public /api/products immediately stops returning the deleted product.
+- Admin/public JS and CSS URLs are cache-busted to avoid an old browser/Render UI.
+- Service worker cache bumped to v8.
+
+Deploy the whole project, then use Render: Manual Deploy > Deploy latest commit.

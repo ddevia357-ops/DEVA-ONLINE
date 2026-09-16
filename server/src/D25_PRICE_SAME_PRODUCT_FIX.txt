@@ -1,0 +1,5 @@
+D25 fixes price edits so they update the canonical product row only.
+- Removes legacy duplicate rows for built-in catalog products.
+- Preserves the original image/gallery/name/category/code.
+- Price endpoint only changes price_usd and old_price_usd.
+- Public showroom canonicalizes built-in identity/media.

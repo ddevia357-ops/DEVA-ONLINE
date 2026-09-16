@@ -1,0 +1,11 @@
+DEVA QR - Quick start
+
+1) Double-click START_DEVA_LOCAL.bat
+2) Keep the black server window open.
+3) Open Admin from http://localhost:3000/admin
+4) Go to DEVA Rewards and print/open the showroom QR.
+5) Phone and computer must be on the same Wi-Fi for local testing.
+6) Customer scans the printed QR with the normal phone Camera. The link opens DEVA, asks for registration if needed, then activates Rewards automatically.
+7) The in-app “QR scan” button also uses the camera on browsers that support BarcodeDetector. On iPhone, the normal Camera QR flow is the most reliable.
+
+For production: set PUBLIC_BASE_URL to your real HTTPS domain before printing the permanent QR.
