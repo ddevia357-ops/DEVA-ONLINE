@@ -1,0 +1,1 @@
+D24: admin GET APIs bypass the shared public API limiter; rewards live polling reduced to 60 seconds.

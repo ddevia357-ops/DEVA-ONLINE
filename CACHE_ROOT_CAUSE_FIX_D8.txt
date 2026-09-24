@@ -1,0 +1,1 @@
+DEVA D8 cache fix: disabled ETag/Last-Modified for app shell, added browser+CDN no-store headers, removed PWA manifest registration path, unregisters legacy service workers and clears Cache Storage, removed service-worker forced client navigation. Render deploys already purge edge cache; this prevents browser/PWA stale shell reuse.

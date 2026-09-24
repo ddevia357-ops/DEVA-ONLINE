@@ -1,0 +1,12 @@
+DEVA Furniture Erbil — Build 49
+SOCIAL LOGIN REQUIRED FOR WEEKLY GIFTS
+
+- Removed the public name/phone/email/SMS activation form.
+- Weekly-gift participation is app-only.
+- A user must sign in with Google, Facebook, or Apple before scanning the showroom QR.
+- The backend verifies the social-provider credential before issuing a DEVA Rewards session.
+- The QR participation endpoint rejects guests and expired/invalid sessions.
+- Admin Rewards shows the verified login provider and email instead of a synthetic phone number.
+- Existing weekly gifts, sponsor information, images, descriptions, and draw administration remain available.
+
+Deploy this web/backend build before testing Build 31 of the app.

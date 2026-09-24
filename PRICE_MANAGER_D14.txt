@@ -1,0 +1,1 @@
+D14: one-time catalog recovery into SQLite for Admin Price Manager. Existing Admin edits are preserved via INSERT OR IGNORE. Search by name/code and quick price/old-price editing remain enabled.

@@ -1,0 +1,7 @@
+DEVA Build 43 Professional Fixes
+- Fixed sponsor Active/Inactive timezone mismatch by storing ISO UTC and migrating legacy Erbil-local sponsor dates.
+- Sponsor image/video/logo/gallery uploads remain supported through /api/admin/sponsors/upload.
+- Added GIFTS sponsor placement for DEVA Gifts / draw promotion.
+- Website HOME sponsor feed continues through /api/sponsors/active?placement=HOME.
+- API now accepts HOME, PRODUCTS, PARTNERS, GIFTS placements.
+- Existing product catalog/database logic preserved.

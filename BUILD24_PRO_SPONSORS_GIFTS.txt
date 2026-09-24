@@ -1,0 +1,7 @@
+DEVA BUILD 24 — Professional Sponsors + Weekly Gifts
+- Sponsor logo, cover, gallery, video, website, WhatsApp, Instagram, Facebook
+- Sponsor media upload endpoint (JPG/PNG/WEBP/MP4/MOV, up to 80MB)
+- Priority, schedule, active/inactive, views/clicks
+- Weekly Rewards prize can be DEVA Gift or Sponsor Gift
+- Sponsor association, gift image/video/description
+- Existing QR/Rewards/SOLD OUT preserved

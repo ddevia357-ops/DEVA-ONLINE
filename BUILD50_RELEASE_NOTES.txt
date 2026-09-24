@@ -1,0 +1,11 @@
+DEVA Furniture Erbil — Build 50
+DEVA AI LIVE CATALOG ASSISTANT
+
+- زیادکردنی POST /api/deva-ai
+- گەڕان و پێشنیاری بەرهەم لە کاتەلۆگی Live
+- پشتگیری کوردی، عەرەبی، ئینگلیزی و تورکی
+- ناسینەوەی جۆری کەلوپەل، بودجە و کۆدی بەرهەم
+- تەنها بەرهەمی Active و Available پیشان دەدرێت
+- Rate limit و validation بۆ پاراستنی API
+
+Deploy: Render should deploy the server/src backend from this package.

@@ -1,0 +1,6 @@
+BUILD 44 PREMIUM ADS
+- Horizontal premium sponsor slider on website
+- Inline HTML5 video support on website
+- Sponsor logo overlay, phone/WhatsApp, Instagram and CTA
+- Responsive mobile layout
+- Existing admin upload/gallery/video fields preserved

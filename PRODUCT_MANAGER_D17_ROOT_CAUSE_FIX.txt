@@ -1,0 +1,10 @@
+DEVA D17 Product Manager root-cause fix
+
+Root cause found:
+server/src/server.js called syncBuiltinCatalog() from ensureCatalogProducts() and /api/admin/products/catalog-sync, but server.js imported only db from db.js. This caused syncBuiltinCatalog to be undefined at request time, so the self-heal path could not restore catalog products.
+
+Fixes:
+- Import syncBuiltinCatalog together with db.
+- Keep request-time self-heal for both public and admin products endpoints.
+- Remove duplicate /api/admin/products/next-code route.
+- Preserve all existing UI/design/data/features.

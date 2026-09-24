@@ -1,0 +1,8 @@
+DEVA Build 24 Gallery Upload Update
+- Added Upload More Images button with multiple selection.
+- Uploads JPG/PNG/WEBP through existing secure sponsor media endpoint.
+- Adds uploaded paths automatically to sponsor gallery.
+- Live thumbnail preview for gallery images.
+- Remove (x) button for each gallery image before saving.
+- Existing Logo, Cover and Video uploads preserved.
+- Existing API payload remains compatible with the mobile app.
