@@ -2,10 +2,12 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { restoreDatabaseSnapshot } from './remote-storage.js';
 const defaultDataDir = fileURLToPath(new URL('../data/', import.meta.url));
 const dataDir = process.env.DATA_DIR ? fileURLToPath(new URL('file://' + (process.env.DATA_DIR.endsWith('/') ? process.env.DATA_DIR : process.env.DATA_DIR + '/'))) : defaultDataDir;
 const dbPath = process.env.DB_PATH || new URL('deva.sqlite', 'file://' + (dataDir.endsWith('/') ? dataDir : dataDir + '/')).pathname;
 fs.mkdirSync(dataDir, { recursive: true });
+await restoreDatabaseSnapshot(dbPath);
 export const db = new Database(dbPath);
 function ensureProductsLiveSchemaD48(){
   const cols=db.prepare("PRAGMA table_info(products)").all().map(x=>x.name);
@@ -15,8 +17,8 @@ function ensureProductsLiveSchemaD48(){
     ['catalog_origin',"ALTER TABLE products ADD COLUMN catalog_origin TEXT DEFAULT 'ADMIN'"],
     ['stock_qty',"ALTER TABLE products ADD COLUMN stock_qty INTEGER NOT NULL DEFAULT 0"],
     ['low_stock_threshold',"ALTER TABLE products ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 0"],
-    ['updated_at',"ALTER TABLE products ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP",
-    ['is_available',"ALTER TABLE products ADD COLUMN is_available INTEGER NOT NULL DEFAULT 1"]]
+    ['updated_at',"ALTER TABLE products ADD COLUMN updated_at TEXT"],
+    ['is_available',"ALTER TABLE products ADD COLUMN is_available INTEGER NOT NULL DEFAULT 1"]
   ];
   for(const [name,sql] of migrations){
     if(!cols.includes(name)){
@@ -25,6 +27,7 @@ function ensureProductsLiveSchemaD48(){
       cols.push(name);
     }
   }
+  db.prepare('UPDATE products SET updated_at=CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
   // backfill product_code deterministically for old rows without one
   const rows=db.prepare("SELECT id,product_code FROM products").all();
   const upd=db.prepare("UPDATE products SET product_code=? WHERE id=?");
@@ -126,13 +129,14 @@ for(const [name,sql] of [
  ['role',"ALTER TABLE admins ADD COLUMN role TEXT NOT NULL DEFAULT 'ADMIN'"],
  ['active',"ALTER TABLE admins ADD COLUMN active INTEGER NOT NULL DEFAULT 1"],
  ['token_version',"ALTER TABLE admins ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"],
- ['updated_at',"ALTER TABLE admins ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP"],
+ ['updated_at',"ALTER TABLE admins ADD COLUMN updated_at TEXT"],
  ['failed_attempts',"ALTER TABLE admins ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0"],
  ['lock_until',"ALTER TABLE admins ADD COLUMN lock_until INTEGER"],
  ['last_login_at',"ALTER TABLE admins ADD COLUMN last_login_at TEXT"],
  ['totp_secret',"ALTER TABLE admins ADD COLUMN totp_secret TEXT"],
  ['totp_enabled',"ALTER TABLE admins ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0"]
 ]) if(!cols.includes(name)) db.exec(sql);
+db.prepare('UPDATE admins SET updated_at=CURRENT_TIMESTAMP WHERE updated_at IS NULL').run();
 const backupCols=db.prepare('PRAGMA table_info(backups)').all().map(x=>x.name);
 if(!backupCols.includes('kind')) db.exec("ALTER TABLE backups ADD COLUMN kind TEXT NOT NULL DEFAULT 'MANUAL'");
 const auditCols=db.prepare('PRAGMA table_info(audit_logs)').all().map(x=>x.name);
