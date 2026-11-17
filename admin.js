@@ -7,7 +7,7 @@ function localLogout(){csrfToken='';sessionToken='';sessionStorage.removeItem('d
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}catch{}localLogout()};
 $('#loginForm').onsubmit=async e=>{e.preventDefault();try{const payload={email:$('#email').value,password:$('#password').value};if(loginNeeds2fa)payload.code=$('#code').value;const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify(payload)});if(d.requires2fa){loginNeeds2fa=true;$('#codeWrap').hidden=false;$('#code').focus();$('#msg').textContent='کۆدی Google Authenticator بنووسە';return}csrfToken=d.csrfToken;sessionToken=d.sessionToken||'';if(sessionToken)sessionStorage.setItem('deva_admin_token',sessionToken);await start()}catch(x){$('#msg').textContent=x.message}};
 $$('[data-tab]').forEach(b=>b.onclick=()=>{$$('.tab').forEach(t=>t.hidden=true);$('#'+b.dataset.tab).hidden=false;if(b.dataset.tab==='logsTab')loadLogs();if(b.dataset.tab==='adminsTab')loadAdmins();if(b.dataset.tab==='securityTab')loadSecurity();if(b.dataset.tab==='giftsTab')loadGifts()});
-async function start(){me=await api('/api/admin/me');csrfToken=me.csrfToken;$('#msg').textContent='';$('#login').hidden=true;$('#panel').hidden=false;$('#who').textContent=`${me.email} · ${me.role}`;$$('.super-only').forEach(x=>x.hidden=me.role!=='SUPER_ADMIN');if(me.role==='STAFF')$('#productForm').hidden=true;$('#statRole').textContent=me.role;$('#stat2fa').textContent=me.totpEnabled?'ON':'OFF';$('#twoFactorState').textContent=me.totpEnabled?'2FA چالاکە':'2FA هێشتا چالاک نەکراوە';$('#setup2fa').hidden=me.totpEnabled;await load();loadNextProductCode()}
+async function start(){me=await api('/api/admin/me');csrfToken=me.csrfToken;$('#msg').textContent='';$('#login').hidden=true;$('#panel').hidden=false;$('#who').textContent=`${me.email} · ${me.role}`;$$('.super-only').forEach(x=>x.hidden=me.role!=='SUPER_ADMIN');if(me.role==='STAFF')$('#productForm').hidden=true;$('#statRole').textContent=me.role;$('#stat2fa').textContent=me.totpEnabled?'ON':'OFF';$('#twoFactorState').textContent=me.totpEnabled?'2FA چالاکە':'2FA هێشتا چالاک نەکراوە';$('#setup2fa').hidden=me.totpEnabled;await load();loadNextProductCode();loadCatalogDisplay()}
 function renderAdminProducts(rows){
   const q=String($('#productAdminSearch')?.value||'').trim().toLowerCase();
   const p=(rows||[]).filter(x=>!q||String(x.name||'').toLowerCase().includes(q)||String(x.product_code||'').toLowerCase().includes(q)||String(x.id||'').toLowerCase().includes(q));
@@ -187,3 +187,23 @@ const __rp=$('#refreshProductsBtn');if(__rp)__rp.onclick=()=>load(true);
 
 // D27: visibility-triggered full reload disabled
 const __ps=$('#productAdminSearch');if(__ps)__ps.addEventListener('input',()=>renderAdminProducts(window.__adminProducts||[]));
+
+// The stored prices stay editable while public catalog prices are hidden.
+let catalogPricesHidden=false;
+function renderCatalogDisplay(){
+  const button=$('#toggleCatalogPrices');if(!button)return;
+  button.textContent=catalogPricesHidden?'نیشاندانی هەموو نرخەکان':'شاردنەوەی هەموو نرخەکان';
+  $('#catalogPricesState').textContent=catalogPricesHidden?'نرخەکان شاراونەتەوە؛ وێنەکان دیارن.':'نرخەکان دیارن.';
+}
+async function loadCatalogDisplay(){
+  const button=$('#toggleCatalogPrices');if(!button)return;
+  button.hidden=me?.role==='STAFF';if(button.hidden)return;
+  button.disabled=true;
+  try{const setting=await api('/api/admin/catalog-display');catalogPricesHidden=setting.prices_hidden===true;renderCatalogDisplay();button.disabled=false}
+  catch(e){$('#catalogPricesState').textContent=e.message}
+}
+$('#toggleCatalogPrices')?.addEventListener('click',async()=>{
+  const button=$('#toggleCatalogPrices');button.disabled=true;
+  try{const setting=await api('/api/admin/catalog-display',{method:'PATCH',body:JSON.stringify({prices_hidden:!catalogPricesHidden})});catalogPricesHidden=setting.prices_hidden===true;renderCatalogDisplay();note(catalogPricesHidden?'✓ هەموو نرخەکان شاردرانەوە':'✓ هەموو نرخەکان نیشان درانەوە')}
+  catch(e){note(e.message,false)}finally{button.disabled=false}
+});
