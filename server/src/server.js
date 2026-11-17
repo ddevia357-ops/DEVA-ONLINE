@@ -359,6 +359,19 @@ function ensureCatalogProducts(context='request'){
   }
   return count;
 }
+// One catalog-wide switch; product prices remain untouched for later restoration.
+db.exec("CREATE TABLE IF NOT EXISTS catalog_display_settings (id INTEGER PRIMARY KEY CHECK(id=1), prices_hidden INTEGER NOT NULL DEFAULT 0 CHECK(prices_hidden IN (0,1)))");
+db.prepare('INSERT OR IGNORE INTO catalog_display_settings(id) VALUES(1)').run();
+function catalogDisplaySettings(){return {prices_hidden:!!db.prepare('SELECT prices_hidden FROM catalog_display_settings WHERE id=1').get().prices_hidden}}
+app.get('/api/catalog-display',(_req,res)=>res.json(catalogDisplaySettings()));
+app.get('/api/admin/catalog-display',requireAdmin,allowPermission('products.write'),(_req,res)=>res.json(catalogDisplaySettings()));
+app.patch('/api/admin/catalog-display',requireAdmin,requireCsrf,allowPermission('products.write'),(req,res)=>{
+  const parsed=z.object({prices_hidden:z.boolean()}).strict().safeParse(req.body);
+  if(!parsed.success)return res.status(400).json({error:'Invalid display setting'});
+  db.prepare('UPDATE catalog_display_settings SET prices_hidden=? WHERE id=1').run(parsed.data.prices_hidden?1:0);
+  audit(req,'CATALOG_PRICES_VISIBILITY','catalog',parsed.data);
+  res.json(catalogDisplaySettings());
+});
 app.get('/api/products',(req,res)=>{ensureCatalogProducts('public-products');try{repairCatalogDuplicates('public-products')}catch(e){console.error('[D25] public duplicate repair failed:',e.message)}const rows=catalogOverlayRows({activeOnly:true});res.set('X-DEVA-Catalog-Version','D45-overlay-155');res.set('X-DEVA-Product-Count',String(rows.length));res.set('Cache-Control','no-store, no-cache, must-revalidate');res.json(rows)});
 
 const devaAiCopy={
